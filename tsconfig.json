@@ -1,0 +1,13 @@
+{
+    "include": ["src"],
+    "compilerOptions": {
+        "declaration": true,
+        "outDir": "dist",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "sourceMap": true,
+        "strict": true,
+        "module": "NodeNext",
+        "target": "ESNext"
+    }
+}
