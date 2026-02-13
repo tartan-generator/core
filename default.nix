@@ -8,7 +8,7 @@
       overlays = [];
     },
 }: let
-  version = "0.7.1";
+  version = (builtins.fromJSON (builtins.readFile ./package.json)).version;
   dependencyHash = "sha256-Tc5quacGssuvcx+FhdUn8/IzakqZc2BqHySueBPbS2w=";
   buildOnVersion = nodeVersion:
     pkgs.buildNpmPackage {
