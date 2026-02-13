@@ -13,8 +13,8 @@ jobs:
       - uses: cachix/install-nix-action@v24
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run flake checks
-        run: nix flake check -L
+      - name: Try to build all check derivations
+        run: "nix-build -A checks --no-out-link --max-jobs 1"
   publish:
     needs: test
     runs-on: ubuntu-latest
@@ -29,6 +29,6 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build with Nix
-        run: nix build -L
+        run: "nix-build --max-jobs 1"
       - name: Publish to npm
-        run: "npm publish ./result"
+        run: "npm publish ./result/lib/node_modules/@tartan/core/"
