@@ -29,6 +29,6 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build with Nix
-        run: "nix-build --max-jobs 1"
+        run: "nix-build -A package --max-jobs 1"
       - name: Publish to npm
         run: "npm publish ./result/lib/node_modules/@tartan/core/"
