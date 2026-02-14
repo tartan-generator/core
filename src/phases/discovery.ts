@@ -13,6 +13,7 @@ import { Dirent } from "node:fs";
 import fs from "fs/promises";
 import { ContextTreeNode, NodeType } from "../types/nodes.js";
 import { randomUUID } from "node:crypto";
+import { resolvePath } from "../inputs/resolve.js";
 
 export async function loadContextTreeNode(params: {
     directory: string;
@@ -22,15 +23,28 @@ export async function loadContextTreeNode(params: {
     parentContext?: FullTartanContext;
     type?: NodeType;
 }): Promise<ContextTreeNode<NodeType>> {
-    const nodePath = path.join(params.directory, params.filename ?? "");
-    const rootDirectory = params.rootDirectory ?? params.directory;
+    const rootDirectory = path.resolve(
+        params.rootDirectory ?? params.directory,
+    );
+    const relativeDirectory: string = path.normalize(
+        path.relative(rootDirectory, params.directory),
+    );
+    const resolvedDirectory: string = resolvePath(
+        relativeDirectory,
+        rootDirectory,
+        { "~root": rootDirectory },
+    ).pathname;
+
+    Logger.log(
+        `Loading node at ${path.join(relativeDirectory, params.filename ?? "")}`,
+    );
 
     const defaultContextFilename: string = path.join(
-        params.directory,
+        resolvedDirectory,
         `${params.filename ?? "tartan"}.context.default`,
     );
     const localContextFilename = path.join(
-        params.directory,
+        resolvedDirectory,
         `${params.filename ?? "tartan"}.context`,
     );
 
@@ -89,14 +103,14 @@ export async function loadContextTreeNode(params: {
             localContext: context,
             type: type,
         },
-        params.directory,
+        resolvedDirectory,
     );
 
     const id = randomUUID();
     const stagingDirectory = path.join(".staging", id);
     return {
         id: id,
-        path: nodePath,
+        path: path.join(relativeDirectory, params.filename ?? ""),
         stagingDirectory: stagingDirectory,
         type: type,
         context: context,
@@ -116,6 +130,7 @@ async function loadChildren(
     params: ChildLoaderParams,
     directory: string,
 ): Promise<ContextTreeNode[]> {
+    Logger.log(`loading children at ${directory}`);
     if (
         params.type === "page.file" ||
         params.type === "asset" ||

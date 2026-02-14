@@ -63,6 +63,9 @@ export async function processNode(params: {
     await fs.mkdir(node.stagingDirectory, { recursive: true });
 
     if (node.type === "handoff" || node.type === "handoff.file") {
+        /*
+         * HANDOFF HANDLER
+         */
         Logger.log(
             `Node ${node.id} at ${node.path} is "handoff" type`,
             LogLevel.Verbose,
@@ -107,6 +110,9 @@ export async function processNode(params: {
             derivedChildren: [],
         };
     } else {
+        /*
+         * SOURCE PROCESSOR
+         */
         // find the source processor list to use
         let sourceProcessors: TartanInput<SourceProcessor>[];
         if (node.type === "page" || node.type === "page.file") {
@@ -121,20 +127,18 @@ export async function processNode(params: {
         }
 
         // set up the source file path
-        let filepath: URL;
+        let sourcePath: URL;
         if (node.type === "page") {
-            filepath = resolvePath(
+            sourcePath = resolvePath(
                 node.context.pageSource!,
                 path.resolve(node.path, rootDirectory),
                 {
                     "~root": rootDirectory,
-                    "~page-source": undefined,
                 },
             );
         } else if (node.type === "page.file" || node.type === "asset") {
-            filepath = resolvePath(node.path, rootDirectory, {
+            sourcePath = resolvePath(node.path, rootDirectory, {
                 "~root": rootDirectory,
-                "~page-source": undefined,
             });
         } else {
             throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
@@ -146,11 +150,11 @@ export async function processNode(params: {
         const cumulative = {
             getSourceBuffer: (() =>
                 fs.readFile(
-                    filepath,
+                    sourcePath,
                 )) as SourceProcessorInput["getSourceBuffer"],
             getSourceStream: (() =>
                 fs
-                    .open(filepath)
+                    .open(sourcePath)
                     .then((handle) =>
                         handle.createReadStream(),
                     )) as SourceProcessorInput["getSourceStream"],
@@ -171,7 +175,7 @@ export async function processNode(params: {
                         extraContext: node.context.extraContext,
                         pathParameters: processor.url.searchParams,
                         sourceMetadata: cumulative.sourceMetadata,
-                        sourcePath: filepath.pathname,
+                        sourcePath: sourcePath.pathname,
                         outputPath: cumulative.outputPath,
                         isRoot,
                         children: processedChildren,
@@ -213,23 +217,35 @@ export async function processNode(params: {
         );
 
         const derivedChildren: ProcessedNode[] = await Promise.all(
-            cumulative.dependencies.map((dependency) =>
-                loadContextTreeNode({
-                    directory: path.dirname(dependency),
-                    filename: path.basename(dependency),
-                    type: "asset",
-                    rootContext: rootContext,
-                    rootDirectory: rootDirectory,
-                    parentContext: node.inheritableContext,
-                }).then((node) =>
-                    processNode({
-                        node,
-                        rootContext,
-                        rootDirectory,
-                        isRoot: false,
-                    }),
+            cumulative.dependencies
+                .map(
+                    // resolve relative to the source file
+                    (dependency) =>
+                        resolvePath(
+                            dependency,
+                            path.dirname(sourcePath.pathname),
+                            {
+                                "~root": rootDirectory,
+                            },
+                        ).pathname,
+                )
+                .map((dependency) =>
+                    loadContextTreeNode({
+                        directory: path.dirname(dependency),
+                        filename: path.basename(dependency),
+                        type: "asset",
+                        rootContext: rootContext,
+                        rootDirectory: rootDirectory,
+                        parentContext: node.inheritableContext,
+                    }).then((node) =>
+                        processNode({
+                            node,
+                            rootContext,
+                            rootDirectory,
+                            isRoot: false,
+                        }),
+                    ),
                 ),
-            ),
         );
 
         return {

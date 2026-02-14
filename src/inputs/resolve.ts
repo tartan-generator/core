@@ -9,10 +9,6 @@ export type ReservedPrefix =
      */
     | "~root"
     /**
-     * The directory that the page source is in. This is derived from either the path specified by `pageSource` for a directory node, or the node path for a file node.
-     */
-    | "~page-source"
-    /**
      * If this prefix is present, the content after that will be resolved as if it were a module specifier rather than a regular path (using `require.resolve`).
      * This will *always* be an option, regardless of if it's actually specified in the prefix map. If it *is* specified, the value will be ignored.
      */

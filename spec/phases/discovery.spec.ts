@@ -15,6 +15,22 @@ import { ContextTreeNode } from "../../src/types/nodes.js";
 import path from "path";
 
 describe("The context tree loader", () => {
+    it("should treat `directory` as the root directory when `rootDirectory` is undefined", async () => {
+        const rootContext: FullTartanContext = {
+            pageMode: "directory",
+            pageSource: "index.html",
+        };
+        const tmpDir = await makeTempFiles({
+            "tartan.context.js": 'export default {pageSource: "uwu.md"}',
+            "child/dummy": "",
+        });
+        const node = await loadContextTreeNode({
+            directory: tmpDir,
+            rootContext,
+        });
+        expect(node.path).toBe(".");
+        expect(node.children[0].path).toBe("child");
+    });
     describe("when loading context objects", () => {
         it("should load a module context", async () => {
             const rootContext: FullTartanContext = {

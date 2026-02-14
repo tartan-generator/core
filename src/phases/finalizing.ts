@@ -79,13 +79,11 @@ export async function finalizeNode(params: {
                 path.resolve(node.path, rootDirectory),
                 {
                     "~root": rootDirectory,
-                    "~page-source": undefined,
                 },
             );
         } else if (node.type === "page.file" || node.type === "asset") {
             filepath = resolvePath(node.path, rootDirectory, {
                 "~root": rootDirectory,
-                "~page-source": undefined,
             });
         } else {
             throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
