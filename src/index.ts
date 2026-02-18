@@ -14,3 +14,4 @@ export * from "./types/inputs.js";
 
 // Other stuff
 export * from "./logger.js"; // so that clients of the core utils can share the logger
+export { loadObject } from "./inputs/file-object.js";

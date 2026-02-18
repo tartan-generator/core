@@ -11,7 +11,7 @@ import { loadModule } from "./module.js";
 import { HandoffHandler } from "../types/handoff-handler.js";
 
 export async function initializeContext(
-    rootDir: string,
+    sourceDir: string,
     contextFile: TartanInput<TartanContextFile>,
 ): Promise<TartanInput<PartialTartanContext>> {
     const resolvedPathPrefixes = Object.fromEntries(
@@ -19,8 +19,7 @@ export async function initializeContext(
             ([key, val]) => [
                 key,
                 resolvePath(val, path.dirname(contextFile.url.pathname), {
-                    "~root": rootDir,
-                    "~page-source": undefined,
+                    "~source": sourceDir,
                 }),
             ],
         ),
@@ -28,8 +27,7 @@ export async function initializeContext(
 
     const prefixMap: PrefixMap = {
         ...resolvedPathPrefixes,
-        "~root": rootDir,
-        "~page-source": undefined,
+        "~source": sourceDir,
     };
 
     const sourceProcessors: FullTartanContext["sourceProcessors"] = contextFile

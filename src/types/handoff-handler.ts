@@ -19,7 +19,7 @@ export type HandoffHandlerInput = {
      */
     extraParameters: URLSearchParams;
     /**
-     * The location of the node, relative to the root directory.
+     * The location of the node, relative to the source directory.
      */
     nodePath: string;
     /**
@@ -51,7 +51,7 @@ export type HandoffHandlerOutput = {
 
 export type HandoffFinalizerInput = HandoffHandlerInput & {
     /**
-     * The resolved output path, relative to the root of the output directory.
+     * The resolved output path, relative to the output directory.
      */
     outputPath: string;
     /**

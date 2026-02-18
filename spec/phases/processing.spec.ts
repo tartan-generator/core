@@ -22,7 +22,7 @@ describe("The node processor", () => {
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
-                rootDirectory: tmpDir,
+                sourceDirectory: tmpDir,
                 rootContext: {
                     pageMode: "directory",
                     pageSource: "source.txt",
@@ -63,7 +63,7 @@ describe("The node processor", () => {
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
-                rootDirectory: tmpDir,
+                sourceDirectory: tmpDir,
                 rootContext: {
                     pageMode: "directory",
                     pageSource: "source.txt",
@@ -104,7 +104,7 @@ describe("The node processor", () => {
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
-                rootDirectory: tmpDir,
+                sourceDirectory: tmpDir,
                 rootContext: {
                     pageMode: "directory",
                     pageSource: "source.txt",
@@ -163,7 +163,7 @@ describe("The node processor", () => {
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
-                rootDirectory: tmpDir,
+                sourceDirectory: tmpDir,
                 rootContext: {
                     pageMode: "directory",
                     pageSource: "source.txt",
@@ -212,7 +212,7 @@ describe("The node processor", () => {
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
-                rootDirectory: tmpDir,
+                sourceDirectory: tmpDir,
                 rootContext: {
                     pageMode: "directory",
                     pageSource: "source.txt",
@@ -242,7 +242,7 @@ describe("The node processor", () => {
         });
         const processedNode: ProcessedNode = await processNode({
             node: node,
-            rootDirectory: tmpDir,
+            sourceDirectory: tmpDir,
             rootContext: {
                 pageMode: "directory",
                 pageSource: "source.txt",

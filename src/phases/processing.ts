@@ -28,7 +28,7 @@ export async function processNode(params: {
     /**
      * The directory the root node was loaded from.
      */
-    rootDirectory: string;
+    sourceDirectory: string;
     /**
      * Whether this node is the root node.
      *
@@ -36,7 +36,7 @@ export async function processNode(params: {
      */
     isRoot?: boolean;
 }): Promise<ProcessedNode> {
-    const { node, rootContext, rootDirectory, isRoot = true } = params;
+    const { node, rootContext, sourceDirectory, isRoot = true } = params;
     Logger.log(`Processing node ${node.id} at ${node.path}`, LogLevel.Info);
     /*
      * Process child nodes.
@@ -50,7 +50,7 @@ export async function processNode(params: {
             processNode({
                 node: child,
                 rootContext: rootContext,
-                rootDirectory: rootDirectory,
+                sourceDirectory: sourceDirectory,
                 isRoot: false,
             }),
         ),
@@ -131,14 +131,14 @@ export async function processNode(params: {
         if (node.type === "page") {
             sourcePath = resolvePath(
                 node.context.pageSource!,
-                path.resolve(node.path, rootDirectory),
+                path.resolve(node.path, sourceDirectory),
                 {
-                    "~root": rootDirectory,
+                    "~source": sourceDirectory,
                 },
             );
         } else if (node.type === "page.file" || node.type === "asset") {
-            sourcePath = resolvePath(node.path, rootDirectory, {
-                "~root": rootDirectory,
+            sourcePath = resolvePath(node.path, sourceDirectory, {
+                "~source": sourceDirectory,
             });
         } else {
             throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
@@ -225,7 +225,7 @@ export async function processNode(params: {
                             dependency,
                             path.dirname(sourcePath.pathname),
                             {
-                                "~root": rootDirectory,
+                                "~source": sourceDirectory,
                             },
                         ).pathname,
                 )
@@ -235,13 +235,13 @@ export async function processNode(params: {
                         filename: path.basename(dependency),
                         type: "asset",
                         rootContext: rootContext,
-                        rootDirectory: rootDirectory,
+                        sourceDirectory: sourceDirectory,
                         parentContext: node.inheritableContext,
                     }).then((node) =>
                         processNode({
                             node,
                             rootContext,
-                            rootDirectory,
+                            sourceDirectory: sourceDirectory,
                             isRoot: false,
                         }),
                     ),

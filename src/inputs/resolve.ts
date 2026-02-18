@@ -4,10 +4,9 @@ import { URL } from "node:url";
 
 export type ReservedPrefix =
     /**
-     * The root directory of the tartan project.
-     * In other words, the path of the root node.
+     * The source directory of the tartan project.
      */
-    | "~root"
+    | "~source"
     /**
      * If this prefix is present, the content after that will be resolved as if it were a module specifier rather than a regular path (using `require.resolve`).
      * This will *always* be an option, regardless of if it's actually specified in the prefix map. If it *is* specified, the value will be ignored.
