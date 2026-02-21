@@ -4,3 +4,4 @@ result
 result-*
 .tmp
 .staging
+default.nix.backup

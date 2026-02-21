@@ -34,6 +34,11 @@ in {
     packages = with pkgs; [
       nodejs_24
       npins
+      (pkgs.writeShellScriptBin "update-deps-hash" ''
+        HASH=$(${pkgs.prefetch-npm-deps}/bin/prefetch-npm-deps package-lock.json)
+        echo $HASH
+        ${pkgs.gnused}/bin/sed -e "s|dependencyHash = \".*\"|dependencyHash = \"$HASH\"|" --in-place=.backup default.nix;
+      '')
     ];
   };
 
