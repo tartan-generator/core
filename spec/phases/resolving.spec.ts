@@ -47,4 +47,37 @@ describe("The node resolver", () => {
             "owo/owo",
         );
     });
+    it("should not allow nodes to set there path above their parent", async () => {
+        const tmpDir = await makeTempFiles({
+            "tartan.context.default.json": JSON.stringify({
+                pageMode: "directory",
+                pageSource: "index",
+                sourceProcessors: ["./processor.js"],
+            } as TartanContextFile),
+            "processor.js": `export default {process: async (input) => ({
+                processedContents: await input.getSourceStream(),
+                outputPath: "../owo",
+            })}`,
+            index: "",
+            "child/index": "",
+            "child/subchild/index": "",
+        });
+
+        const rootContext: FullTartanContext = {
+            pageMode: "directory",
+            pageSource: "index",
+        };
+        const node = await loadContextTreeNode({
+            directory: tmpDir,
+            rootContext,
+        });
+        const processed = await processNode({
+            node,
+            rootContext,
+            sourceDirectory: tmpDir,
+            isRoot: true,
+        });
+
+        expect(resolveNode.bind(null, processed)).toThrow();
+    });
 });
