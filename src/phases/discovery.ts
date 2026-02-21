@@ -32,12 +32,15 @@ export async function loadContextTreeNode(params: {
     const resolvedDirectory: string = resolvePath(
         relativeDirectory,
         sourceDirectory,
-        { "~source": sourceDirectory },
+        {},
     ).pathname;
 
-    Logger.log(
-        `Loading node at ${path.join(relativeDirectory, params.filename ?? "")}`,
+    const nodePath: string = path.join(
+        relativeDirectory,
+        params.filename ?? "",
     );
+
+    Logger.log(`Loading node at ${nodePath}`);
 
     const defaultContextFilename: string = path.join(
         resolvedDirectory,
@@ -56,9 +59,15 @@ export async function loadContextTreeNode(params: {
     );
 
     const defaultContext: TartanInput<PartialTartanContext> =
-        await initializeContext(sourceDirectory, defaultContextFile);
+        await initializeContext(
+            { "~source-directory": sourceDirectory, "~this-node": nodePath },
+            defaultContextFile,
+        );
     const localContext: TartanInput<PartialTartanContext> =
-        await initializeContext(sourceDirectory, localContextFile);
+        await initializeContext(
+            { "~source-directory": sourceDirectory, "~this-node": nodePath },
+            localContextFile,
+        );
 
     const inheritableContext: FullTartanContext = (
         defaultContext.value.inherit === false
@@ -110,7 +119,7 @@ export async function loadContextTreeNode(params: {
     const stagingDirectory = path.join(".staging", id);
     return {
         id: id,
-        path: path.join(relativeDirectory, params.filename ?? ""),
+        path: nodePath,
         stagingDirectory: stagingDirectory,
         type: type,
         context: context,

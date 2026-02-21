@@ -8,6 +8,54 @@ import { TartanContextFile } from "../../src/types/tartan-context.js";
 
 describe("The node processor", () => {
     describe("when executing source processors", () => {
+        it("should resolve dependencies using path prefixes", async () => {
+            const tmpDir = await makeTempFiles({
+                "processor/process.js": `export default {process: async (input) => {
+                    return {
+                        processedContents: await input.getSourceStream(),
+                        dependencies: ["~source-processor/test.txt", "~source-directory/b.txt", "~this-node/a.txt"] // I can't test ~node-module easily, but tbf that's not a path prefix like the others.
+
+                    }
+                }}`,
+                "processor/test.txt": "hewwo wold",
+                "src/index.md": "asdlkfa",
+                "src/tartan.context.json": JSON.stringify({
+                    sourceProcessors: [
+                        "~source-directory/../processor/process.js",
+                    ],
+                } as TartanContextFile),
+                "src/a.txt": "asdfk",
+                "src/b.txt": "none of the content matterssssssssssssss",
+            });
+
+            const node = await loadContextTreeNode({
+                directory: path.join(tmpDir, "src"),
+                rootContext: {
+                    pageMode: "directory",
+                    pageSource: "index.md",
+                },
+            });
+            const processedNode = await processNode({
+                node,
+                sourceDirectory: path.join(tmpDir, "src"),
+                rootContext: { pageMode: "directory", pageSource: "index.md" },
+            });
+
+            expect(processedNode.derivedChildren).toHaveSize(3);
+            expect(processedNode.derivedChildren).toEqual(
+                jasmine.arrayWithExactContents([
+                    jasmine.objectContaining({
+                        path: "../processor/test.txt",
+                    }),
+                    jasmine.objectContaining({
+                        path: "a.txt",
+                    }),
+                    jasmine.objectContaining({
+                        path: "b.txt",
+                    }),
+                ]),
+            );
+        });
         it("should just copy if no source processors exist", async () => {
             const tmpDir = await makeTempFiles({
                 "source.txt": "hello world",

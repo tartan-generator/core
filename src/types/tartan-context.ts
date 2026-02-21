@@ -64,7 +64,7 @@ export const tartanContextSchema = {
         pathPrefixes: {
             type: "object",
             description:
-                "A map of prefixes to path parts. The path parts will be resolved using only the reserved path prefixes, and treated as relative to the context file they're from.",
+                "A map of prefixes to path parts. The path parts will be resolved using only the reserved path prefixes, and treated as relative to the context file they're from. Can't be PathPrefix.",
             additionalProperties: {
                 type: "string",
             },

@@ -10,25 +10,31 @@ import { SourceProcessor } from "../types/source-processor.js";
 import { loadModule } from "./module.js";
 import { HandoffHandler } from "../types/handoff-handler.js";
 
+/**
+ * Initialize a context by resolving path prefixes and loading source processors/handoff handlers.
+ *
+ * @argument initialPrefixMap A map to use to resolve the `pathPrefixes` object and to combine with the resolved prefix map when loading source processors/handoff handlers.
+ * @argument contextFile The context file to initialize.
+ */
 export async function initializeContext(
-    sourceDir: string,
+    initialPrefixMap: PrefixMap,
     contextFile: TartanInput<TartanContextFile>,
 ): Promise<TartanInput<PartialTartanContext>> {
-    const resolvedPathPrefixes = Object.fromEntries(
-        Object.entries(contextFile.value.pathPrefixes ?? {}).map(
-            ([key, val]) => [
-                key,
-                resolvePath(val, path.dirname(contextFile.url.pathname), {
-                    "~source": sourceDir,
-                }),
-            ],
-        ),
-    );
-
-    const prefixMap: PrefixMap = {
-        ...resolvedPathPrefixes,
-        "~source": sourceDir,
-    };
+    const resolvedPathPrefixes: Record<string, string> | undefined = contextFile
+        .value.pathPrefixes
+        ? Object.fromEntries(
+              Object.entries(contextFile.value.pathPrefixes).map(
+                  ([key, val]) => [
+                      key,
+                      resolvePath(
+                          val,
+                          path.dirname(contextFile.url.pathname),
+                          initialPrefixMap,
+                      ).pathname,
+                  ],
+              ),
+          )
+        : undefined;
 
     const sourceProcessors: FullTartanContext["sourceProcessors"] = contextFile
         .value.sourceProcessors
@@ -38,7 +44,10 @@ export async function initializeContext(
                       resolvePath(
                           processorPath,
                           path.dirname(contextFile.url.pathname),
-                          prefixMap,
+                          {
+                              ...initialPrefixMap,
+                              ...resolvedPathPrefixes,
+                          },
                       ),
                   ),
               ),
@@ -51,7 +60,10 @@ export async function initializeContext(
               resolvePath(
                   contextFile.value.handoffHandler,
                   path.dirname(contextFile.url.pathname),
-                  prefixMap,
+                  {
+                      ...initialPrefixMap,
+                      ...resolvedPathPrefixes,
+                  },
               ),
           )
         : undefined;
@@ -70,7 +82,10 @@ export async function initializeContext(
                                           path.dirname(
                                               contextFile.url.pathname,
                                           ),
-                                          prefixMap,
+                                          {
+                                              ...initialPrefixMap,
+                                              ...resolvedPathPrefixes,
+                                          },
                                       ),
                                   ),
                               ),
@@ -86,6 +101,9 @@ export async function initializeContext(
             ...(sourceProcessors ? { sourceProcessors } : {}),
             ...(handoffHandler ? { handoffHandler } : {}),
             ...(assetProcessors ? { assetProcessors } : {}),
+            ...(resolvedPathPrefixes
+                ? { pathPrefixes: resolvedPathPrefixes }
+                : {}),
         } as PartialTartanContext,
         url: contextFile.url,
     };

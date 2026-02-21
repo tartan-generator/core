@@ -78,12 +78,12 @@ export async function finalizeNode(params: {
                 node.context.pageSource!,
                 path.resolve(node.path, sourceDirectory),
                 {
-                    "~source": sourceDirectory,
+                    "~source-directory": sourceDirectory,
                 },
             );
         } else if (node.type === "page.file" || node.type === "asset") {
             filepath = resolvePath(node.path, sourceDirectory, {
-                "~source": sourceDirectory,
+                "~source-directory": sourceDirectory,
             });
         } else {
             throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;

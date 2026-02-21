@@ -2,11 +2,22 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { URL } from "node:url";
 
+/**
+ * Reserved prefixes
+ */
 export type ReservedPrefix =
     /**
      * The source directory of the tartan project.
      */
-    | "~source"
+    | "~source-directory"
+    /**
+     * Relative to the node being processed.
+     */
+    | "~this-node"
+    /**
+     * Used to resolve dependencies relative to the source processor that requested them.
+     */
+    | "~source-processor"
     /**
      * If this prefix is present, the content after that will be resolved as if it were a module specifier rather than a regular path (using `require.resolve`).
      * This will *always* be an option, regardless of if it's actually specified in the prefix map. If it *is* specified, the value will be ignored.
@@ -15,15 +26,17 @@ export type ReservedPrefix =
 
 export type PrefixMap = Omit<
     {
-        [K in ReservedPrefix]: string | undefined; // the intention is that reserved prefixes must be explicitely defined, although they may not always be used
+        [K in ReservedPrefix]?: string;
     },
     "~node-module"
-> & { [key: string]: string | undefined };
+> & { [key: string]: string };
 
 if (!globalThis.require) {
     globalThis.require = createRequire(import.meta.url);
 }
 /**
+ * Resolve a path using the provided prefix map.
+ *
  * @returns A file url object
  */
 export function resolvePath(
