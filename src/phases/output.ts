@@ -11,7 +11,7 @@ import path from "node:path";
 export async function outputNode(
     node: ResolvedNode,
     outputDirectory: string,
-): Promise<void> {
+): Promise<ResolvedNode> {
     if (node.type === "page" || node.type === "page.file") {
         await fs.mkdir(path.join(path.join(outputDirectory, node.outputPath)), {
             recursive: true,
@@ -46,4 +46,6 @@ export async function outputNode(
             .concat(node.derivedChildren)
             .map((child) => outputNode(child, outputDirectory)),
     );
+
+    return node;
 }
