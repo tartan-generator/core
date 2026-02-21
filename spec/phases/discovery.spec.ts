@@ -32,6 +32,37 @@ describe("The context tree loader", () => {
         expect(node.children[0].path).toBe("child");
     });
     describe("when loading context objects", () => {
+        it("should resolve paths using path prefixes", async () => {
+            await makeTempFile(
+                "tartan.context.json",
+                JSON.stringify({
+                    pathPrefixes: {
+                        "~test": "~source-directory/prefix",
+                        "~test2": "./noprefix",
+                    },
+                    sourceProcessors: ["~test/processor.js"],
+                } as TartanContextFile),
+            );
+            await makeTempFile("prefix/processor.js", "export default {}");
+
+            const node = await loadContextTreeNode({
+                directory: tempDir(),
+                rootContext: {
+                    pageMode: "directory",
+                    pageSource: "doesntmatter",
+                },
+            });
+
+            expect(node.context.pathPrefixes?.["~test"]).toBe(
+                path.join(tempDir(), "prefix"),
+            );
+            expect(node.context.pathPrefixes?.["~test2"]).toBe(
+                path.join(tempDir(), "noprefix"),
+            );
+            expect(node.context.sourceProcessors?.[0].url.pathname).toBe(
+                path.join(tempDir(), "prefix", "processor.js"),
+            );
+        });
         it("should load a module context", async () => {
             const rootContext: FullTartanContext = {
                 pageMode: "directory",

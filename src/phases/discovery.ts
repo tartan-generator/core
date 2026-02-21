@@ -19,25 +19,28 @@ export async function loadContextTreeNode(params: {
     directory: string;
     filename?: string;
     rootContext: FullTartanContext;
-    rootDirectory?: string;
+    sourceDirectory?: string;
     parentContext?: FullTartanContext;
     type?: NodeType;
 }): Promise<ContextTreeNode<NodeType>> {
-    const rootDirectory = path.resolve(
-        params.rootDirectory ?? params.directory,
+    const sourceDirectory = path.resolve(
+        params.sourceDirectory ?? params.directory,
     );
     const relativeDirectory: string = path.normalize(
-        path.relative(rootDirectory, params.directory),
+        path.relative(sourceDirectory, params.directory),
     );
     const resolvedDirectory: string = resolvePath(
         relativeDirectory,
-        rootDirectory,
-        { "~root": rootDirectory },
+        sourceDirectory,
+        {},
     ).pathname;
 
-    Logger.log(
-        `Loading node at ${path.join(relativeDirectory, params.filename ?? "")}`,
+    const nodePath: string = path.join(
+        relativeDirectory,
+        params.filename ?? "",
     );
+
+    Logger.log(`Loading node at ${nodePath}`);
 
     const defaultContextFilename: string = path.join(
         resolvedDirectory,
@@ -56,9 +59,15 @@ export async function loadContextTreeNode(params: {
     );
 
     const defaultContext: TartanInput<PartialTartanContext> =
-        await initializeContext(rootDirectory, defaultContextFile);
+        await initializeContext(
+            { "~source-directory": sourceDirectory, "~this-node": nodePath },
+            defaultContextFile,
+        );
     const localContext: TartanInput<PartialTartanContext> =
-        await initializeContext(rootDirectory, localContextFile);
+        await initializeContext(
+            { "~source-directory": sourceDirectory, "~this-node": nodePath },
+            localContextFile,
+        );
 
     const inheritableContext: FullTartanContext = (
         defaultContext.value.inherit === false
@@ -98,7 +107,7 @@ export async function loadContextTreeNode(params: {
     const children = await loadChildren(
         {
             rootContext: params.rootContext,
-            rootDirectory: rootDirectory,
+            sourceDirectory: sourceDirectory,
             parentContext: inheritableContext,
             localContext: context,
             type: type,
@@ -110,7 +119,7 @@ export async function loadContextTreeNode(params: {
     const stagingDirectory = path.join(".staging", id);
     return {
         id: id,
-        path: path.join(relativeDirectory, params.filename ?? ""),
+        path: nodePath,
         stagingDirectory: stagingDirectory,
         type: type,
         context: context,
@@ -121,7 +130,7 @@ export async function loadContextTreeNode(params: {
 
 type ChildLoaderParams = {
     rootContext: FullTartanContext;
-    rootDirectory: string;
+    sourceDirectory: string;
     parentContext: FullTartanContext;
     localContext: FullTartanContext;
     type: NodeType;
@@ -174,7 +183,7 @@ function loadDirectoryChildren(
         .map((dir) =>
             loadContextTreeNode({
                 directory: path.join(dir.parentPath, dir.name),
-                rootDirectory: params.rootDirectory,
+                sourceDirectory: params.sourceDirectory,
                 parentContext: params.parentContext,
                 rootContext: params.rootContext,
                 type: "page",
@@ -199,7 +208,7 @@ function loadFileChildren(
             loadContextTreeNode({
                 directory: file.parentPath,
                 filename: file.name,
-                rootDirectory: params.rootDirectory,
+                sourceDirectory: params.sourceDirectory,
                 parentContext: params.parentContext,
                 rootContext: params.rootContext,
                 type: "page.file",
@@ -224,7 +233,7 @@ function loadAssetChildren(
             loadContextTreeNode({
                 directory: file.parentPath,
                 filename: file.name,
-                rootDirectory: params.rootDirectory,
+                sourceDirectory: params.sourceDirectory,
                 parentContext: params.parentContext,
                 rootContext: params.rootContext,
                 type: "asset",

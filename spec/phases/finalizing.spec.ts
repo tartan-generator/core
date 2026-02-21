@@ -33,7 +33,7 @@ describe("The node finalizer", () => {
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
-                rootDirectory: tmpDir,
+                sourceDirectory: tmpDir,
                 rootContext: {
                     pageMode: "directory",
                     pageSource: "source.txt",
@@ -42,7 +42,7 @@ describe("The node finalizer", () => {
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
                 node: resolvedNode,
-                rootDirectory: tempDir(),
+                sourceDirectory: tempDir(),
             });
 
             const outputtedContents = await fs
@@ -75,7 +75,7 @@ describe("The node finalizer", () => {
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
-                rootDirectory: tmpDir,
+                sourceDirectory: tmpDir,
                 rootContext: {
                     pageMode: "directory",
                     pageSource: "source.txt",
@@ -84,7 +84,7 @@ describe("The node finalizer", () => {
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
                 node: resolvedNode,
-                rootDirectory: tempDir(),
+                sourceDirectory: tempDir(),
             });
 
             const outputtedContents = await fs
@@ -121,7 +121,7 @@ describe("The node finalizer", () => {
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
-                rootDirectory: tmpDir,
+                sourceDirectory: tmpDir,
                 rootContext: {
                     pageMode: "directory",
                     pageSource: "source.txt",
@@ -130,7 +130,7 @@ describe("The node finalizer", () => {
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
                 node: resolvedNode,
-                rootDirectory: tempDir(),
+                sourceDirectory: tempDir(),
             });
 
             const outputtedContents = await fs
@@ -168,7 +168,7 @@ describe("The node finalizer", () => {
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
-                rootDirectory: tmpDir,
+                sourceDirectory: tmpDir,
                 rootContext: {
                     pageMode: "directory",
                     pageSource: "source.txt",
@@ -177,7 +177,7 @@ describe("The node finalizer", () => {
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
                 node: resolvedNode,
-                rootDirectory: tempDir(),
+                sourceDirectory: tempDir(),
             });
 
             const outputtedContents = await fs
@@ -218,7 +218,7 @@ describe("The node finalizer", () => {
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
-                rootDirectory: tmpDir,
+                sourceDirectory: tmpDir,
                 rootContext: {
                     pageMode: "directory",
                     pageSource: "source.txt",
@@ -227,7 +227,7 @@ describe("The node finalizer", () => {
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
                 node: resolvedNode,
-                rootDirectory: tempDir(),
+                sourceDirectory: tempDir(),
             });
 
             const outputtedContents = await fs
@@ -263,7 +263,7 @@ describe("The node finalizer", () => {
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
-                rootDirectory: tmpDir,
+                sourceDirectory: tmpDir,
                 rootContext: {
                     pageMode: "directory",
                     pageSource: "source.txt",
@@ -272,7 +272,7 @@ describe("The node finalizer", () => {
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
                 node: resolvedNode,
-                rootDirectory: tempDir(),
+                sourceDirectory: tempDir(),
             });
         });
     });
@@ -298,7 +298,7 @@ describe("The node finalizer", () => {
         });
         const processedNode: ProcessedNode = await processNode({
             node: node,
-            rootDirectory: tmpDir,
+            sourceDirectory: tmpDir,
             rootContext: {
                 pageMode: "directory",
                 pageSource: "source.txt",
@@ -307,7 +307,7 @@ describe("The node finalizer", () => {
         const resolvedNode: ResolvedNode = resolveNode(processedNode);
         const finalizedNode: ResolvedNode = await finalizeNode({
             node: resolvedNode,
-            rootDirectory: tempDir(),
+            sourceDirectory: tempDir(),
         });
 
         expect(

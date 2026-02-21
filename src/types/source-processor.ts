@@ -33,7 +33,7 @@ export type SourceProcessorInput = {
         [key: string]: any;
     };
     /**
-     * The location of the source file, relative to the root directory.
+     * The location of the source file, relative to the source directory.
      */
     sourcePath: string;
     /**

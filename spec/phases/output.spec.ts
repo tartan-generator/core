@@ -23,7 +23,7 @@ async function processTree() {
     });
     const processedNode: ProcessedNode = await processNode({
         node: node,
-        rootDirectory: tempDir(),
+        sourceDirectory: tempDir(),
         rootContext: {
             pageMode: "directory",
             pageSource: "index.html",
@@ -32,7 +32,7 @@ async function processTree() {
     const resolvedNode: ResolvedNode = resolveNode(processedNode);
     const finalizedNode: ResolvedNode = await finalizeNode({
         node: resolvedNode,
-        rootDirectory: tempDir(),
+        sourceDirectory: tempDir(),
     });
     const outputDir: string = path.join(tempDir(), "output");
 

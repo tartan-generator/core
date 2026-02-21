@@ -36,7 +36,7 @@ describe("The node resolver", () => {
         const processed = await processNode({
             node,
             rootContext,
-            rootDirectory: tmpDir,
+            sourceDirectory: tmpDir,
             isRoot: true,
         });
         const resolved = resolveNode(processed);

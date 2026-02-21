@@ -17,7 +17,7 @@ export type ContextTreeNode<T extends NodeType = NodeType> = {
      */
     type: T;
     /**
-     * The path, relative to the root of the source directory, that this node is located at.
+     * The path this node is located at, relative to the source directory.
      * May be a directory or a file, depending on the node's type.
      */
     path: string;
@@ -42,7 +42,7 @@ export type ProcessedNode = {
      */
     id: string;
     /**
-     * The path of this node, relative to the root directory.
+     * The path of this node, relative to the source directory.
      */
     path: string;
     /**
@@ -84,7 +84,7 @@ export type ResolvedNode = Omit<
     "outputPath" | "baseChildren" | "derivedChildren"
 > & {
     /**
-     * The fully resolved output path of this node, relative to the root output directory
+     * The fully resolved output path of this node, relative to the output directory
      */
     outputPath: string;
     /**

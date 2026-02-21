@@ -23,9 +23,9 @@ import { Logger, LogLevel } from "../logger.js";
 export async function finalizeNode(params: {
     node: ResolvedNode;
     rootNode?: ResolvedNode;
-    rootDirectory: string;
+    sourceDirectory: string;
 }): Promise<ResolvedNode> {
-    const { node, rootNode = node, rootDirectory } = params;
+    const { node, rootNode = node, sourceDirectory } = params;
     Logger.log(`Finalizing node ${node.id} at ${node.path}`, LogLevel.Info);
 
     if (node.type === "handoff" || node.type === "handoff.file") {
@@ -76,14 +76,14 @@ export async function finalizeNode(params: {
         if (node.type === "page") {
             filepath = resolvePath(
                 node.context.pageSource!,
-                path.resolve(node.path, rootDirectory),
+                path.resolve(node.path, sourceDirectory),
                 {
-                    "~root": rootDirectory,
+                    "~source-directory": sourceDirectory,
                 },
             );
         } else if (node.type === "page.file" || node.type === "asset") {
-            filepath = resolvePath(node.path, rootDirectory, {
-                "~root": rootDirectory,
+            filepath = resolvePath(node.path, sourceDirectory, {
+                "~source-directory": sourceDirectory,
             });
         } else {
             throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
@@ -147,11 +147,13 @@ export async function finalizeNode(params: {
     }
 
     await Promise.all(
-        node.baseChildren
-            .concat(node.derivedChildren)
-            .map((child) =>
-                finalizeNode({ node: child, rootDirectory, rootNode }),
-            ),
+        node.baseChildren.concat(node.derivedChildren).map((child) =>
+            finalizeNode({
+                node: child,
+                sourceDirectory: sourceDirectory,
+                rootNode,
+            }),
+        ),
     );
     return node;
 }

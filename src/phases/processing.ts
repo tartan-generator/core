@@ -28,7 +28,7 @@ export async function processNode(params: {
     /**
      * The directory the root node was loaded from.
      */
-    rootDirectory: string;
+    sourceDirectory: string;
     /**
      * Whether this node is the root node.
      *
@@ -36,7 +36,7 @@ export async function processNode(params: {
      */
     isRoot?: boolean;
 }): Promise<ProcessedNode> {
-    const { node, rootContext, rootDirectory, isRoot = true } = params;
+    const { node, rootContext, sourceDirectory, isRoot = true } = params;
     Logger.log(`Processing node ${node.id} at ${node.path}`, LogLevel.Info);
     /*
      * Process child nodes.
@@ -50,7 +50,7 @@ export async function processNode(params: {
             processNode({
                 node: child,
                 rootContext: rootContext,
-                rootDirectory: rootDirectory,
+                sourceDirectory: sourceDirectory,
                 isRoot: false,
             }),
         ),
@@ -131,14 +131,14 @@ export async function processNode(params: {
         if (node.type === "page") {
             sourcePath = resolvePath(
                 node.context.pageSource!,
-                path.resolve(node.path, rootDirectory),
+                path.resolve(node.path, sourceDirectory),
                 {
-                    "~root": rootDirectory,
+                    "~source-directory": sourceDirectory,
                 },
             );
         } else if (node.type === "page.file" || node.type === "asset") {
-            sourcePath = resolvePath(node.path, rootDirectory, {
-                "~root": rootDirectory,
+            sourcePath = resolvePath(node.path, sourceDirectory, {
+                "~source-directory": sourceDirectory,
             });
         } else {
             throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
@@ -201,7 +201,25 @@ export async function processNode(params: {
                 cumulative.dependencies = Array.from(
                     new Set(
                         cumulative.dependencies.concat(
-                            output.dependencies ?? [],
+                            (output.dependencies ?? []).map(
+                                // resolve relative to the source file
+                                (dependency) =>
+                                    resolvePath(
+                                        dependency,
+                                        path.dirname(sourcePath.pathname),
+                                        {
+                                            "~source-directory":
+                                                sourceDirectory,
+                                            "~this-node":
+                                                node.type === "page"
+                                                    ? node.path
+                                                    : path.dirname(node.path),
+                                            "~source-processor": path.dirname(
+                                                processor.url.pathname,
+                                            ),
+                                        },
+                                    ).pathname,
+                            ),
                         ),
                     ),
                 ); // ik this isn't efficient but it shouldn't matter}
@@ -217,35 +235,23 @@ export async function processNode(params: {
         );
 
         const derivedChildren: ProcessedNode[] = await Promise.all(
-            cumulative.dependencies
-                .map(
-                    // resolve relative to the source file
-                    (dependency) =>
-                        resolvePath(
-                            dependency,
-                            path.dirname(sourcePath.pathname),
-                            {
-                                "~root": rootDirectory,
-                            },
-                        ).pathname,
-                )
-                .map((dependency) =>
-                    loadContextTreeNode({
-                        directory: path.dirname(dependency),
-                        filename: path.basename(dependency),
-                        type: "asset",
-                        rootContext: rootContext,
-                        rootDirectory: rootDirectory,
-                        parentContext: node.inheritableContext,
-                    }).then((node) =>
-                        processNode({
-                            node,
-                            rootContext,
-                            rootDirectory,
-                            isRoot: false,
-                        }),
-                    ),
+            cumulative.dependencies.map((dependency) =>
+                loadContextTreeNode({
+                    directory: path.dirname(dependency),
+                    filename: path.basename(dependency),
+                    type: "asset",
+                    rootContext: rootContext,
+                    sourceDirectory: sourceDirectory,
+                    parentContext: node.inheritableContext,
+                }).then((node) =>
+                    processNode({
+                        node,
+                        rootContext,
+                        sourceDirectory: sourceDirectory,
+                        isRoot: false,
+                    }),
                 ),
+            ),
         );
 
         return {
