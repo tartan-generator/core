@@ -18,7 +18,6 @@ import { Readable } from "stream";
 import { URL } from "node:url";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
-import { Logger, LogLevel } from "../logger.js";
 
 export async function finalizeNode(params: {
     node: ResolvedNode;
@@ -26,24 +25,22 @@ export async function finalizeNode(params: {
     sourceDirectory: string;
 }): Promise<ResolvedNode> {
     const { node, rootNode = node, sourceDirectory } = params;
-    Logger.log(`Finalizing node ${node.id} at ${node.path}`, LogLevel.Info);
+    const logger = node.logger.child({ phase: "finalizing" });
+    logger.info(`starting the finalizing phase`);
 
     if (node.type === "handoff" || node.type === "handoff.file") {
-        Logger.log(
-            `Node ${node.id} at ${node.path} is "handoff" type`,
-            LogLevel.Verbose,
-        );
+        logger.debug(`Node is "handoff" type`);
         if (node.context.handoffHandler === undefined) {
             throw `No handoff handler object for handoff node ${node.id} at ${node.path}`;
         }
         const handoffHandler: HandoffHandler =
             node.context.handoffHandler.value;
 
-        // Execute handoff handler
-        Logger.log(
-            `Executing handoff handler (${node.context.handoffHandler.url.pathname}) for node ${node.id}:${node.path}`,
-            LogLevel.Verbose,
+        logger.debug(
+            `handoff handler found at ${node.context.handoffHandler.url.pathname}`,
         );
+        // Execute handoff handler
+        logger.info(`Executing handoff handler`);
         if (handoffHandler.finalize) {
             await handoffHandler.finalize({
                 extraContext: node.context.extraContext,
@@ -61,15 +58,28 @@ export async function finalizeNode(params: {
         // find the source processor list to use
         let sourceProcessors: TartanInput<SourceProcessor>[];
         if (node.type === "page" || node.type === "page.file") {
+            logger.debug(
+                `node is a page, using the regular source processor list`,
+            );
             sourceProcessors = node.context.sourceProcessors ?? [];
         } else if (node.type === "asset") {
-            sourceProcessors =
-                Object.entries(node.context.assetProcessors ?? {}).find(
-                    ([glob]) => minimatch(node.path, glob),
-                )?.[1] ?? [];
+            logger.debug(
+                "node is an asset, trying to match with an asset processor list",
+            );
+            const match = Object.entries(
+                node.context.assetProcessors ?? {},
+            ).find(([glob]) => minimatch(node.path, glob));
+            if (match) {
+                logger.debug(`matched glob ${match[0]}`);
+                sourceProcessors = match[1];
+            } else {
+                logger.debug("no match found");
+                sourceProcessors = [];
+            }
         } else {
             throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
         }
+        logger.info(`found ${sourceProcessors.length} processors to execute`);
 
         // set up the source file path
         let filepath: URL;
@@ -108,7 +118,12 @@ export async function finalizeNode(params: {
         /*
          * Run all the source processors
          */
+        let i = 0;
         for (const processor of sourceProcessors) {
+            logger.info(
+                `running finalize function for processor ${i} (${processor.url.pathname})`,
+            );
+            i++;
             if (processor.value.finalize) {
                 const output: SourceFinalizerOutput =
                     await processor.value.finalize({
@@ -136,7 +151,9 @@ export async function finalizeNode(params: {
                         : async () => Readable.from(contents as Buffer);
             }
         }
+        logger.info("finished running all finalizers");
 
+        logger.info("writing processed contents to staging directory");
         // write to output file
         // note: I considered using fs.copyFile if there were no source processors,
         // but that shouldn't drastically improve performance, and I feel like this is more maintainable.
@@ -146,6 +163,7 @@ export async function finalizeNode(params: {
         );
     }
 
+    logger.info("waiting for children finalize");
     await Promise.all(
         node.baseChildren.concat(node.derivedChildren).map((child) =>
             finalizeNode({
@@ -155,5 +173,6 @@ export async function finalizeNode(params: {
             }),
         ),
     );
+    logger.info("finished finalizing");
     return node;
 }

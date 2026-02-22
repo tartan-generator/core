@@ -20,7 +20,7 @@ import { loadContextTreeNode } from "./discovery.js";
 import { URL } from "node:url";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
-import { Logger, LogLevel } from "../logger.js";
+import { Logger } from "winston";
 
 export async function processNode(params: {
     node: ContextTreeNode;
@@ -30,21 +30,23 @@ export async function processNode(params: {
      */
     sourceDirectory: string;
     /**
+     * The base logger for derived nodes to use
+     */
+    baseLogger: Logger;
+    /**
      * Whether this node is the root node.
      *
      * @default true
      */
     isRoot?: boolean;
 }): Promise<ProcessedNode> {
+    const logger = params.node.logger.child({ phase: "processing" });
     const { node, rootContext, sourceDirectory, isRoot = true } = params;
-    Logger.log(`Processing node ${node.id} at ${node.path}`, LogLevel.Info);
+    logger.info("starting node processing");
     /*
      * Process child nodes.
      */
-    Logger.log(
-        `Processing children for node ${node.id} at ${node.path}`,
-        LogLevel.Verbose,
-    );
+    logger.info("processing children");
     const processedChildren: ProcessedNode[] = await Promise.all(
         node.children.map((child) =>
             processNode({
@@ -52,24 +54,19 @@ export async function processNode(params: {
                 rootContext: rootContext,
                 sourceDirectory: sourceDirectory,
                 isRoot: false,
+                baseLogger: params.baseLogger,
             }),
         ),
     );
 
-    Logger.log(
-        `Creating staging directory at ${node.stagingDirectory}`,
-        LogLevel.Verbose,
-    );
+    logger.debug(`creating staging directory at ${node.stagingDirectory}`);
     await fs.mkdir(node.stagingDirectory, { recursive: true });
 
     if (node.type === "handoff" || node.type === "handoff.file") {
         /*
          * HANDOFF HANDLER
          */
-        Logger.log(
-            `Node ${node.id} at ${node.path} is "handoff" type`,
-            LogLevel.Verbose,
-        );
+        logger.debug(`Node is "handoff" type`);
         if (node.context.handoffHandler === undefined) {
             throw `No handoff handler object for handoff node ${node.id} at ${node.path}`;
         }
@@ -77,10 +74,10 @@ export async function processNode(params: {
             node.context.handoffHandler.value;
 
         // Execute handoff handler
-        Logger.log(
-            `Executing handoff handler (${node.context.handoffHandler.url.pathname}) for node ${node.id}:${node.path}`,
-            LogLevel.Verbose,
+        logger.debug(
+            `handoff handler found at ${node.context.handoffHandler.url.pathname}`,
         );
+        logger.info("executing handoff handler's `process` function");
         let output: HandoffHandlerOutput = {};
         if (handoffHandler.process) {
             output = await handoffHandler.process({
@@ -92,8 +89,8 @@ export async function processNode(params: {
                 isFile: node.type === "handoff.file",
             });
         }
-        Logger.log(
-            `Handoff handler for ${node.id} at ${node.path} outputted ${JSON.stringify(output, null, 4)}`,
+        logger.debug(
+            `Handoff handler outputted ${JSON.stringify(output, null, 4)}`,
         );
 
         // Return a ProcessedNode
@@ -108,6 +105,7 @@ export async function processNode(params: {
             metadata: output.metadata ?? {},
             baseChildren: processedChildren,
             derivedChildren: [],
+            logger: params.node.logger,
         };
     } else {
         /*
@@ -116,15 +114,28 @@ export async function processNode(params: {
         // find the source processor list to use
         let sourceProcessors: TartanInput<SourceProcessor>[];
         if (node.type === "page" || node.type === "page.file") {
+            logger.debug(
+                `node is a page, using the regular source processor list`,
+            );
             sourceProcessors = node.context.sourceProcessors ?? [];
         } else if (node.type === "asset") {
-            sourceProcessors =
-                Object.entries(node.context.assetProcessors ?? {}).find(
-                    ([glob]) => minimatch(node.path, glob),
-                )?.[1] ?? [];
+            logger.debug(
+                "node is an asset, trying to match with an asset processor list",
+            );
+            const match = Object.entries(
+                node.context.assetProcessors ?? {},
+            ).find(([glob]) => minimatch(node.path, glob));
+            if (match) {
+                logger.debug(`matched glob ${match[0]}`);
+                sourceProcessors = match[1];
+            } else {
+                logger.debug("no match found");
+                sourceProcessors = [];
+            }
         } else {
             throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
         }
+        logger.info(`found ${sourceProcessors.length} processors to execute`);
 
         // set up the source file path
         let sourcePath: URL;
@@ -143,6 +154,8 @@ export async function processNode(params: {
         } else {
             throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
         }
+
+        logger.debug(`loading initial source from ${sourcePath.pathname}`);
 
         /*
          * Set up all the transient params (passed from processor to processor)
@@ -166,7 +179,12 @@ export async function processNode(params: {
         /*
          * Run all the source processors
          */
+        let i = 0;
         for (const processor of sourceProcessors) {
+            logger.info(
+                `running process function of processor ${i} (${processor.url.pathname})`,
+            );
+            i++;
             if (processor.value.process) {
                 const output: SourceProcessorOutput =
                     await processor.value.process({
@@ -226,6 +244,9 @@ export async function processNode(params: {
             }
         }
 
+        logger.info("finished executing all source processors");
+
+        logger.info("writing processed contents to staging directory");
         // write to output file
         // note: I considered using fs.copyFile if there were no source processors,
         // but that shouldn't drastically improve performance, and I feel like this is more maintainable.
@@ -234,6 +255,9 @@ export async function processNode(params: {
             createWriteStream(path.join(node.stagingDirectory, "processed")),
         );
 
+        logger.info(
+            `loading ${cumulative.dependencies.length} derived children`,
+        );
         const derivedChildren: ProcessedNode[] = await Promise.all(
             cumulative.dependencies.map((dependency) =>
                 loadContextTreeNode({
@@ -243,17 +267,20 @@ export async function processNode(params: {
                     rootContext: rootContext,
                     sourceDirectory: sourceDirectory,
                     parentContext: node.inheritableContext,
+                    baseLogger: params.baseLogger,
                 }).then((node) =>
                     processNode({
                         node,
                         rootContext,
                         sourceDirectory: sourceDirectory,
                         isRoot: false,
+                        baseLogger: params.baseLogger,
                     }),
                 ),
             ),
         );
 
+        logger.info("finished processing");
         return {
             id: node.id,
             path: node.path,
@@ -265,6 +292,7 @@ export async function processNode(params: {
             metadata: cumulative.sourceMetadata,
             baseChildren: processedChildren,
             derivedChildren,
+            logger: node.logger,
         };
     }
 }

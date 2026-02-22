@@ -1,3 +1,4 @@
+import { Logger } from "winston";
 import { FullTartanContext } from "./tartan-context.js";
 
 export type NodeType =
@@ -34,6 +35,10 @@ export type ContextTreeNode<T extends NodeType = NodeType> = {
      * The directory in which this node's sources are written to before being outputted.
      */
     stagingDirectory: string;
+    /**
+     * The logger object for this node.
+     */
+    logger: Logger;
 };
 
 export type ProcessedNode = {
@@ -77,6 +82,10 @@ export type ProcessedNode = {
      * Child nodes that were discovered during processing.
      */
     derivedChildren: ProcessedNode[];
+    /**
+     * The logger object for this node.
+     */
+    logger: Logger;
 };
 
 export type ResolvedNode = Omit<
