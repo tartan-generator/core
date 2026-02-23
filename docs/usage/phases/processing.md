@@ -23,7 +23,7 @@ Source processor outputs feed into each other in the order they're listed. This 
 - The `outputPath` property is also cumulative. If a source processor doesn't return a value (or returns undefined) for that property, it won't be overwritten. Otherwise it will be.
 - The `dependencies` property is the combination of all previously requested dependencies, de-duplicated. The paths are resolved immediately after they're returned by a source processor, and can use the `~source-processor`, `~source-directory`, `~this-node`, and `~node-module` prefixes.
 
-If the node is of type `page` the file contents provided to the first source processor are from the file at `pageSource`, resolved relative to the node path. Otherwise, if the node is `page.file` or `asset`, the file at the node path is used.
+If the node is of type `page` the file contents provided to the first source processor are from the file at `pageSource`, resolved relative to the node path using the path prefixes defined by the local context object, plus the reserved `~source-directory` prefix. Otherwise, if the node is `page.file` or `asset`, the file at the node path is used.
 
 Right now, we only run the `process` function provided by the source processor (since we're in the "processing" phase).
 

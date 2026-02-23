@@ -28,7 +28,13 @@ describe("The context initializer", () => {
             url: pathToFileURL(path.join(tmpDir, "tartan.context")),
         };
         const initialized: TartanInput<PartialTartanContext> =
-            await initializeContext(tmpDir, tartanContextFile, nullLogger);
+            await initializeContext(
+                {
+                    "~source-directory": tmpDir,
+                },
+                tartanContextFile,
+                nullLogger
+            );
 
         expect(initialized.value.sourceProcessors).toBeDefined();
         expect(initialized.value.handoffHandler).toBeDefined();
@@ -55,7 +61,13 @@ describe("The context initializer", () => {
             url: new URL(path.join(tmpDir, "tartan.context"), "file://"),
         };
         const initialized: TartanInput<PartialTartanContext> =
-            await initializeContext(tmpDir, contextFile, nullLogger);
+            await initializeContext(
+                {
+                    "~source-directory": tmpDir,
+                },
+                contextFile,
+                nullLogger
+            );
 
         expect(initialized.value.assetProcessors).toBeDefined();
         expect(initialized.value.assetProcessors).toEqual({
