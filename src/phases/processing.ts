@@ -6,7 +6,7 @@ import { TartanInput } from "../types/inputs.js";
 import { ContextTreeNode, ProcessedNode } from "../types/nodes.js";
 import { FullTartanContext } from "../types/tartan-context.js";
 import fs from "fs/promises";
-import { resolvePath } from "../inputs/resolve.js";
+import { pathToFileURL, resolvePath } from "../inputs/resolve.js";
 import path from "path";
 import {
     SourceProcessor,
@@ -134,12 +134,13 @@ export async function processNode(params: {
                 path.resolve(node.path, sourceDirectory),
                 {
                     "~source-directory": sourceDirectory,
+                    ...(node.context.pathPrefixes ?? {}),
                 },
             );
         } else if (node.type === "page.file" || node.type === "asset") {
-            sourcePath = resolvePath(node.path, sourceDirectory, {
-                "~source-directory": sourceDirectory,
-            });
+            sourcePath = pathToFileURL(
+                path.resolve(sourceDirectory, node.path),
+            );
         } else {
             throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
         }

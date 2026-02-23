@@ -8,6 +8,49 @@ import { TartanContextFile } from "../../src/types/tartan-context.js";
 
 describe("The node processor", () => {
     describe("when executing source processors", () => {
+        it("should resolve page source using path prefixes", async () => {
+            process.env["ASDF"] = "yes";
+            const prefixContext = (prefixPath: string): string =>
+                JSON.stringify({
+                    pathPrefixes: { "~prefix": prefixPath },
+                } as TartanContextFile);
+            const tmpDir = await makeTempFiles({
+                "src/tartan.context.json": prefixContext("../sources/"),
+                "sources/index.md": "source uwu",
+                "src/child/tartan.context.json": JSON.stringify({
+                    pageSource: "~source-directory/../sources/index.md",
+                }),
+            });
+            const node = await loadContextTreeNode({
+                directory: path.join(tmpDir, "src"),
+                rootContext: {
+                    pageMode: "directory",
+                    pageSource: "~prefix/index.md",
+                },
+            });
+            const processed = await processNode({
+                node,
+                rootContext: {
+                    pageMode: "directory",
+                    pageSource: "nomatter",
+                },
+                sourceDirectory: path.join(tmpDir, "src"),
+            });
+            const baseSource: string = await fs
+                .readFile(path.join(processed.stagingDirectory, "processed"))
+                .then((val) => val.toString());
+            const childSource: string = await fs
+                .readFile(
+                    path.join(
+                        processed.baseChildren[0].stagingDirectory,
+                        "processed",
+                    ),
+                )
+                .then((val) => val.toString());
+            process.env["ASDF"] = "no";
+            expect(baseSource).toBe("source uwu");
+            expect(childSource).toBe("source uwu");
+        });
         it("should resolve dependencies using path prefixes", async () => {
             const tmpDir = await makeTempFiles({
                 "processor/process.js": `export default {process: async (input) => {
