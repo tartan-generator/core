@@ -28,6 +28,7 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "~prefix/index.md",
                 },
+                baseLogger: nullLogger,
             });
             const processed = await processNode({
                 node,
@@ -36,6 +37,7 @@ describe("The node processor", () => {
                     pageSource: "nomatter",
                 },
                 sourceDirectory: path.join(tmpDir, "src"),
+                baseLogger: nullLogger,
             });
             const baseSource: string = await fs
                 .readFile(path.join(processed.stagingDirectory, "processed"))
