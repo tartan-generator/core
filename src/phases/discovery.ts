@@ -62,10 +62,11 @@ export async function loadContextTreeNode(params: {
     );
 
     const defaultContextFile: TartanInput<TartanContextFile> =
-        await loadObject<TartanContextFile>(defaultContextFilename, {});
+        await loadObject<TartanContextFile>(defaultContextFilename, {}, logger);
     const localContextFile: TartanInput<TartanContextFile> = await loadObject(
         localContextFilename,
         {},
+        logger,
     );
 
     logger.info("initializing context objects");
@@ -73,11 +74,13 @@ export async function loadContextTreeNode(params: {
         await initializeContext(
             { "~source-directory": sourceDirectory, "~this-node": nodePath },
             defaultContextFile,
+            logger,
         );
     const localContext: TartanInput<PartialTartanContext> =
         await initializeContext(
             { "~source-directory": sourceDirectory, "~this-node": nodePath },
             localContextFile,
+            logger,
         );
 
     const inheritableContext: FullTartanContext = (

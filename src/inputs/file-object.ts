@@ -6,6 +6,7 @@ import { TartanInput } from "../types/inputs.js";
 import { loadFile } from "./file.js";
 import { URL } from "node:url";
 import { pathToFileURL } from "./resolve.js";
+import { Logger } from "winston";
 
 const objectFileExtensionOrder = [".ts", ".mts", ".js", ".mjs", ".json"];
 const objectFileExtensionSet = new Set(objectFileExtensionOrder);
@@ -21,7 +22,9 @@ const extensionIndexMap: { [key: string]: number } =
 export async function loadObject<T>(
     basename: string,
     defaultIfNoFileExists: T,
+    logger: Logger,
 ): Promise<TartanInput<T>> {
+    logger.debug(`trying to load object at ${basename}`);
     const resolvedBasename: URL = pathToFileURL(path.resolve(basename));
     const files = await fs.readdir(path.dirname(resolvedBasename.pathname), {
         withFileTypes: true,
@@ -39,6 +42,7 @@ export async function loadObject<T>(
 
             return aNum - bNum;
         });
+    logger.debug(`found ${matchingFiles.length} possible matches`);
 
     const pathToLoad: ParsedPath | undefined =
         matchingFiles.length > 0
@@ -48,6 +52,7 @@ export async function loadObject<T>(
             : undefined;
 
     if (pathToLoad === undefined) {
+        logger.debug("falling back to default value");
         return {
             value: defaultIfNoFileExists,
             url: resolvedBasename,
@@ -55,15 +60,18 @@ export async function loadObject<T>(
     }
 
     if (moduleFileExtensions.has(pathToLoad.ext)) {
+        logger.debug(`trying to load ${path.format(pathToLoad)} as a module`);
         return {
             value: await loadModule<T>(
                 pathToFileURL(path.format(pathToLoad)),
+                logger,
             ).then(
                 (val) => val.value as T, // ignore the module path, instead setting it to resolvedBasename
             ),
             url: resolvedBasename,
         };
     } else {
+        logger.debug(`trying to load ${path.format(pathToLoad)} as JSON`);
         return {
             value: await loadJSON(pathToFileURL(path.format(pathToLoad))),
             url: resolvedBasename,

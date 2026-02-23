@@ -1,9 +1,9 @@
 import { TartanInput } from "../types/inputs.js";
 import esbuild from "esbuild";
 import { runInThisContext, Script } from "node:vm";
-import { Logger, LogLevel } from "../logger.js";
 import { URL } from "node:url";
 import { createRequire } from "node:module";
+import { Logger } from "winston";
 
 // put require in the global scope, if it's not already there.
 // this is just so that I can use imports in the loaded modules, and share the global scope
@@ -13,7 +13,10 @@ if (!globalThis.require) {
 /**
  * @argument moduleURL A fully resolved file url
  */
-export async function loadModule<T>(moduleURL: URL): Promise<TartanInput<T>> {
+export async function loadModule<T>(
+    moduleURL: URL,
+    logger: Logger,
+): Promise<TartanInput<T>> {
     const result = await esbuild.build({
         entryPoints: [moduleURL.pathname],
         platform: "node",
@@ -32,14 +35,13 @@ export async function loadModule<T>(moduleURL: URL): Promise<TartanInput<T>> {
             color: true,
         });
         // print logs
-        Logger.log(
+        logger.warn(
             [
                 "==================================================\n",
                 `Warnings while building ${moduleURL}\n\n`,
                 formattedWarnings.join("\n"),
                 "==================================================",
             ].join("\n"),
-            LogLevel.Warning,
         );
     }
     if (result.outputFiles.length !== 1) {
