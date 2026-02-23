@@ -1,3 +1,4 @@
+import TransportStream from "winston-transport";
 import { loadContextTreeNode } from "./phases/discovery.js";
 import { finalizeNode } from "./phases/finalizing.js";
 import { outputNode } from "./phases/output.js";
@@ -5,6 +6,8 @@ import { processNode } from "./phases/processing.js";
 import { resolveNode } from "./phases/resolving.js";
 import { ContextTreeNode, ProcessedNode, ResolvedNode } from "./types/nodes.js";
 import { FullTartanContext } from "./types/tartan-context.js";
+import { createLogger } from "winston";
+import { NullTransport } from "./types/logs.js";
 
 /**
  * A helper function that calls each phase in sequence and returns the root ResolvedNode
@@ -17,15 +20,21 @@ export async function build(
     sourceDirectory: string,
     outputDirectory: string,
     rootContext: FullTartanContext,
+    loggerTransports?: TransportStream[],
 ): Promise<ResolvedNode> {
+    const baseLogger = createLogger({
+        transports: loggerTransports ?? [new NullTransport()],
+    });
     const node: ContextTreeNode = await loadContextTreeNode({
         directory: sourceDirectory,
         rootContext: rootContext,
+        baseLogger,
     });
     const processed: ProcessedNode = await processNode({
         node,
         rootContext: rootContext,
         sourceDirectory: sourceDirectory,
+        baseLogger,
     });
     const resolved: ResolvedNode = resolveNode(processed);
     const finalized: ResolvedNode = await finalizeNode({
@@ -51,7 +60,8 @@ export * from "./types/source-processor.js";
 export * from "./types/tartan-context.js";
 export * from "./types/nodes.js";
 export * from "./types/inputs.js";
+export * from "./types/logs.js";
 
-// Other stuff
-export * from "./logger.js"; // so that clients of the core utils can share the logger
-export { loadObject } from "./inputs/file-object.js";
+// Other stuff to assist UIs
+export { loadObject } from "./inputs/file-object.js"; // to load config and stuff
+export { initializeContext } from "./inputs/context.js"; // to initialize root context
