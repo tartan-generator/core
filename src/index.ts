@@ -52,6 +52,7 @@ export * from "./types/tartan-context.js";
 export * from "./types/nodes.js";
 export * from "./types/inputs.js";
 
-// Other stuff
+// Other stuff to assist UIs
 export * from "./logger.js"; // so that clients of the core utils can share the logger
-export { loadObject } from "./inputs/file-object.js";
+export { loadObject } from "./inputs/file-object.js"; // to load config and stuff
+export { initializeContext } from "./inputs/context.js"; // to initialize root context
