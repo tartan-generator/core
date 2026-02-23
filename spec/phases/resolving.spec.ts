@@ -7,6 +7,7 @@ import {
     TartanContextFile,
 } from "../../src/types/tartan-context.js";
 import { makeTempFiles } from "../utils/filesystem.js";
+import { nullLogger } from "../helpers/logs.js";
 
 describe("The node resolver", () => {
     it("should resolve all the nodes in the tree, and not let the root node change it's output path", async () => {
@@ -32,12 +33,14 @@ describe("The node resolver", () => {
         const node = await loadContextTreeNode({
             directory: tmpDir,
             rootContext,
+            baseLogger: nullLogger,
         });
         const processed = await processNode({
             node,
             rootContext,
             sourceDirectory: tmpDir,
             isRoot: true,
+            baseLogger: nullLogger,
         });
         const resolved = resolveNode(processed);
 
@@ -70,12 +73,14 @@ describe("The node resolver", () => {
         const node = await loadContextTreeNode({
             directory: tmpDir,
             rootContext,
+            baseLogger: nullLogger,
         });
         const processed = await processNode({
             node,
             rootContext,
             sourceDirectory: tmpDir,
             isRoot: true,
+            baseLogger: nullLogger,
         });
 
         expect(resolveNode.bind(null, processed)).toThrow();

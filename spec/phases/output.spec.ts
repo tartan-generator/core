@@ -12,6 +12,7 @@ import { TartanContextFile } from "../../src/types/tartan-context.js";
 import { resolveNode } from "../../src/phases/resolving.js";
 import { finalizeNode } from "../../src/phases/finalizing.js";
 import { outputNode } from "../../src/phases/output.js";
+import { nullLogger } from "../helpers/logs.js";
 
 async function processTree() {
     const node: ContextTreeNode = await loadContextTreeNode({
@@ -20,6 +21,7 @@ async function processTree() {
             pageMode: "directory",
             pageSource: "index.html",
         },
+        baseLogger: nullLogger,
     });
     const processedNode: ProcessedNode = await processNode({
         node: node,
@@ -28,6 +30,7 @@ async function processTree() {
             pageMode: "directory",
             pageSource: "index.html",
         },
+        baseLogger: nullLogger,
     });
     const resolvedNode: ResolvedNode = resolveNode(processedNode);
     const finalizedNode: ResolvedNode = await finalizeNode({

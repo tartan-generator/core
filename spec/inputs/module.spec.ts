@@ -1,6 +1,7 @@
 import { makeTempFile, updateTempFile } from "../utils/filesystem.js";
 import { loadModule } from "../../src/inputs/module.js";
 import path from "node:path";
+import { nullLogger } from "../helpers/logs.js";
 
 describe("The module loader", () => {
     it("should load a module, once", async () => {
@@ -10,6 +11,7 @@ describe("The module loader", () => {
         );
         const module = await loadModule<number>(
             new URL(path.resolve(testFile), "file://"),
+            nullLogger,
         );
 
         expect(module.value).toBe(10);
@@ -23,6 +25,7 @@ describe("The module loader", () => {
 
         const result = await loadModule<number>(
             new URL(path.resolve(main), "file://"),
+            nullLogger,
         ).then((val) => val.value);
 
         expect(result).toBe(50);
@@ -36,6 +39,7 @@ describe("The module loader", () => {
 
         const result = await loadModule<number>(
             new URL(path.resolve(main), "file://"),
+            nullLogger,
         ).then((val) => val.value);
 
         expect(result).toBe(50);
@@ -43,6 +47,7 @@ describe("The module loader", () => {
         await updateTempFile("dep.ts", "export default 25");
         const newResult = await loadModule<number>(
             new URL(path.resolve(main), "file://"),
+            nullLogger,
         ).then((val) => val.value);
 
         expect(newResult).toBe(25);
@@ -55,6 +60,7 @@ describe("The module loader", () => {
         );
         const func = await loadModule<() => Promise<void>>(
             new URL(path.resolve(file), "file://"),
+            nullLogger,
         ).then((val) => val.value);
 
         return expectAsync(func()).toBeResolved();

@@ -5,6 +5,7 @@ import { getTempFile, makeTempFiles } from "../utils/filesystem.js";
 import fs from "fs/promises";
 import path from "path";
 import { TartanContextFile } from "../../src/types/tartan-context.js";
+import { nullLogger } from "../helpers/logs.js";
 
 describe("The node processor", () => {
     describe("when executing source processors", () => {
@@ -34,11 +35,13 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "index.md",
                 },
+                baseLogger: nullLogger,
             });
             const processedNode = await processNode({
                 node,
                 sourceDirectory: path.join(tmpDir, "src"),
                 rootContext: { pageMode: "directory", pageSource: "index.md" },
+                baseLogger: nullLogger,
             });
 
             expect(processedNode.derivedChildren).toHaveSize(3);
@@ -67,6 +70,7 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
@@ -75,6 +79,7 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
 
             const outputtedContents = await fs
@@ -108,6 +113,7 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
@@ -116,6 +122,7 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
 
             const outputtedContents = await fs
@@ -149,6 +156,7 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
@@ -157,6 +165,7 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
 
             const outputtedContents = await fs
@@ -208,6 +217,7 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
@@ -216,6 +226,7 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
 
             expect(processedNode.metadata).toEqual({
@@ -257,6 +268,7 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
@@ -265,6 +277,7 @@ describe("The node processor", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
         });
     });
@@ -287,6 +300,7 @@ describe("The node processor", () => {
                 pageMode: "directory",
                 pageSource: "source.txt",
             },
+            baseLogger: nullLogger,
         });
         const processedNode: ProcessedNode = await processNode({
             node: node,
@@ -295,6 +309,7 @@ describe("The node processor", () => {
                 pageMode: "directory",
                 pageSource: "source.txt",
             },
+            baseLogger: nullLogger,
         });
 
         expect(

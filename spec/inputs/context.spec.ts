@@ -7,6 +7,7 @@ import {
 import { makeTempFiles } from "../utils/filesystem.js";
 import path from "node:path";
 import { TartanInput } from "../../src/types/inputs.js";
+import { nullLogger } from "../helpers/logs.js";
 
 describe("The context initializer", () => {
     it("should load a source processor and handoff handler", async () => {
@@ -27,7 +28,7 @@ describe("The context initializer", () => {
             url: pathToFileURL(path.join(tmpDir, "tartan.context")),
         };
         const initialized: TartanInput<PartialTartanContext> =
-            await initializeContext(tmpDir, tartanContextFile);
+            await initializeContext(tmpDir, tartanContextFile, nullLogger);
 
         expect(initialized.value.sourceProcessors).toBeDefined();
         expect(initialized.value.handoffHandler).toBeDefined();
@@ -54,7 +55,7 @@ describe("The context initializer", () => {
             url: new URL(path.join(tmpDir, "tartan.context"), "file://"),
         };
         const initialized: TartanInput<PartialTartanContext> =
-            await initializeContext(tmpDir, contextFile);
+            await initializeContext(tmpDir, contextFile, nullLogger);
 
         expect(initialized.value.assetProcessors).toBeDefined();
         expect(initialized.value.assetProcessors).toEqual({
