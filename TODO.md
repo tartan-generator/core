@@ -4,3 +4,4 @@
 - Context inheritance should be better. Merging object like `assetProcessors` and `extraContext`.
 - What if there's no source file? Do I skip? Provide source processors with an empty buffer? Error?
 - Option to ignore directories
+- Pretty error logs

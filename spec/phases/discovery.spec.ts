@@ -13,6 +13,7 @@ import {
 } from "../utils/filesystem.js";
 import { ContextTreeNode } from "../../src/types/nodes.js";
 import path from "path";
+import { nullLogger } from "../helpers/logs.js";
 
 describe("The context tree loader", () => {
     it("should treat `directory` as the root directory when `rootDirectory` is undefined", async () => {
@@ -27,6 +28,7 @@ describe("The context tree loader", () => {
         const node = await loadContextTreeNode({
             directory: tmpDir,
             rootContext,
+            baseLogger: nullLogger,
         });
         expect(node.path).toBe(".");
         expect(node.children[0].path).toBe("child");
@@ -51,6 +53,7 @@ describe("The context tree loader", () => {
                     pageMode: "directory",
                     pageSource: "doesntmatter",
                 },
+                baseLogger: nullLogger,
             });
 
             expect(node.context.pathPrefixes?.["~test"]).toBe(
@@ -74,6 +77,7 @@ describe("The context tree loader", () => {
             const node = await loadContextTreeNode({
                 directory: tmpDir,
                 rootContext,
+                baseLogger: nullLogger,
             });
 
             expect(node.context).toEqual({
@@ -89,6 +93,7 @@ describe("The context tree loader", () => {
             const node = await loadContextTreeNode({
                 directory: tempDir(),
                 rootContext,
+                baseLogger: nullLogger,
             });
 
             expect(node.context).toEqual(rootContext);
@@ -114,6 +119,7 @@ describe("The context tree loader", () => {
             const node = await loadContextTreeNode({
                 directory: tempDir(),
                 rootContext,
+                baseLogger: nullLogger,
             });
             expect(node.context).toEqual(expectedResult);
         });
@@ -134,6 +140,7 @@ describe("The context tree loader", () => {
             const node = await loadContextTreeNode({
                 directory: tempDir(),
                 rootContext,
+                baseLogger: nullLogger,
             });
 
             const expectedOutput: FullTartanContext = {
@@ -158,6 +165,7 @@ describe("The context tree loader", () => {
                 directory: tempDir(),
                 parentContext: parentContext,
                 rootContext,
+                baseLogger: nullLogger,
             });
 
             const childContext = childNode.context;
@@ -186,6 +194,7 @@ describe("The context tree loader", () => {
                 directory: tempDir(),
                 parentContext: inheritableContext,
                 rootContext,
+                baseLogger: nullLogger,
             });
 
             expect(childNode.context).toEqual({
@@ -218,6 +227,7 @@ describe("The context tree loader", () => {
                 const node = await loadContextTreeNode({
                     directory: path.join(tmpDir),
                     rootContext,
+                    baseLogger: nullLogger,
                 });
 
                 expect(node.inheritableContext).toEqual(rootContext);
@@ -253,6 +263,7 @@ describe("The context tree loader", () => {
                 const node = await loadContextTreeNode({
                     directory: tmpDir,
                     rootContext,
+                    baseLogger: nullLogger,
                 });
 
                 expect(node.children).toHaveSize(2);
@@ -268,6 +279,7 @@ describe("The context tree loader", () => {
                 const node = await loadContextTreeNode({
                     directory: tmpDir,
                     rootContext,
+                    baseLogger: nullLogger,
                 });
 
                 expect(node.children[0].type).toBe("page.file");
@@ -286,6 +298,7 @@ describe("The context tree loader", () => {
                 const node = await loadContextTreeNode({
                     directory: tmpDir,
                     rootContext,
+                    baseLogger: nullLogger,
                 });
 
                 expect(node.children).toHaveSize(3);
@@ -303,6 +316,7 @@ describe("The context tree loader", () => {
                 const node = await loadContextTreeNode({
                     directory: tmpDir,
                     rootContext,
+                    baseLogger: nullLogger,
                 });
 
                 expect(node.children).toHaveSize(1);
@@ -322,6 +336,7 @@ describe("The context tree loader", () => {
                 const node = await loadContextTreeNode({
                     directory: tmpDir,
                     rootContext,
+                    baseLogger: nullLogger,
                 });
 
                 expect(node.children).toHaveSize(1);
@@ -342,6 +357,7 @@ describe("The context tree loader", () => {
                 const node = await loadContextTreeNode({
                     directory: tmpDir,
                     rootContext,
+                    baseLogger: nullLogger,
                 });
 
                 expect(node.children).toHaveSize(2);
@@ -360,6 +376,7 @@ describe("The context tree loader", () => {
                 const node = await loadContextTreeNode({
                     directory: tmpDir,
                     rootContext,
+                    baseLogger: nullLogger,
                 });
 
                 expect(node.children).toHaveSize(3);
@@ -379,6 +396,7 @@ describe("The context tree loader", () => {
                 const node = await loadContextTreeNode({
                     directory: tmpDir,
                     rootContext,
+                    baseLogger: nullLogger,
                 });
 
                 expect(node.children).toHaveSize(1);
@@ -402,6 +420,7 @@ describe("The context tree loader", () => {
                 const node = await loadContextTreeNode({
                     directory: tmpDir,
                     rootContext,
+                    baseLogger: nullLogger,
                 });
 
                 expect(node.type).toBe("handoff");
@@ -424,6 +443,7 @@ describe("The context tree loader", () => {
                 const node = await loadContextTreeNode({
                     directory: tmpDir,
                     rootContext,
+                    baseLogger: nullLogger,
                 });
 
                 expect(node.children).toHaveSize(1);

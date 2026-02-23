@@ -7,13 +7,13 @@ import path from "node:path";
 import { TartanInput } from "../types/inputs.js";
 import { loadObject } from "../inputs/file-object.js";
 import { initializeContext } from "../inputs/context.js";
-import { Logger, LogLevel } from "../logger.js";
 import { minimatch } from "minimatch";
 import { Dirent } from "node:fs";
 import fs from "fs/promises";
 import { ContextTreeNode, NodeType } from "../types/nodes.js";
 import { randomUUID } from "node:crypto";
 import { resolvePath } from "../inputs/resolve.js";
+import { Logger } from "winston";
 
 export async function loadContextTreeNode(params: {
     directory: string;
@@ -22,6 +22,10 @@ export async function loadContextTreeNode(params: {
     sourceDirectory?: string;
     parentContext?: FullTartanContext;
     type?: NodeType;
+    /**
+     * A logger with transport and format already set up.
+     */
+    baseLogger: Logger;
 }): Promise<ContextTreeNode<NodeType>> {
     const sourceDirectory = path.resolve(
         params.sourceDirectory ?? params.directory,
@@ -34,14 +38,20 @@ export async function loadContextTreeNode(params: {
         sourceDirectory,
         {},
     ).pathname;
-
     const nodePath: string = path.join(
         relativeDirectory,
         params.filename ?? "",
     );
+    const id = randomUUID();
 
-    Logger.log(`Loading node at ${nodePath}`);
+    // set up logger
+    const nodeLogger = params.baseLogger.child({
+        nodeId: id,
+        nodePath: nodePath,
+    });
+    const logger = nodeLogger.child({ phase: "discovery" });
 
+    logger.info("loading context objects");
     const defaultContextFilename: string = path.join(
         resolvedDirectory,
         `${params.filename ?? "tartan"}.context.default`,
@@ -52,21 +62,25 @@ export async function loadContextTreeNode(params: {
     );
 
     const defaultContextFile: TartanInput<TartanContextFile> =
-        await loadObject<TartanContextFile>(defaultContextFilename, {});
+        await loadObject<TartanContextFile>(defaultContextFilename, {}, logger);
     const localContextFile: TartanInput<TartanContextFile> = await loadObject(
         localContextFilename,
         {},
+        logger,
     );
 
+    logger.info("initializing context objects");
     const defaultContext: TartanInput<PartialTartanContext> =
         await initializeContext(
             { "~source-directory": sourceDirectory, "~this-node": nodePath },
             defaultContextFile,
+            logger,
         );
     const localContext: TartanInput<PartialTartanContext> =
         await initializeContext(
             { "~source-directory": sourceDirectory, "~this-node": nodePath },
             localContextFile,
+            logger,
         );
 
     const inheritableContext: FullTartanContext = (
@@ -111,11 +125,12 @@ export async function loadContextTreeNode(params: {
             parentContext: inheritableContext,
             localContext: context,
             type: type,
+            logger: logger,
+            baseLogger: params.baseLogger,
         },
         resolvedDirectory,
     );
 
-    const id = randomUUID();
     const stagingDirectory = path.join(".staging", id);
     return {
         id: id,
@@ -125,6 +140,7 @@ export async function loadContextTreeNode(params: {
         context: context,
         inheritableContext: inheritableContext,
         children: children,
+        logger: nodeLogger,
     };
 }
 
@@ -134,22 +150,28 @@ type ChildLoaderParams = {
     parentContext: FullTartanContext;
     localContext: FullTartanContext;
     type: NodeType;
+    /**
+     * The local logger with phase and everything else set up.
+     */
+    logger: Logger;
+    /**
+     * The base logger to be passed on to children.
+     */
+    baseLogger: Logger;
 };
 async function loadChildren(
     params: ChildLoaderParams,
     directory: string,
 ): Promise<ContextTreeNode[]> {
-    Logger.log(`loading children at ${directory}`);
+    const logger = params.logger;
+    logger.info("trying to load children");
     if (
         params.type === "page.file" ||
         params.type === "asset" ||
         params.type === "handoff" ||
         params.type === "handoff.file"
     ) {
-        Logger.log(
-            `type ${params.type} doesn't load children`,
-            LogLevel.Verbose,
-        );
+        logger.info(`type ${params.type} doesn't allow children`);
         return [];
     }
 
@@ -178,65 +200,68 @@ function loadDirectoryChildren(
     params: ChildLoaderParams,
     entries: Dirent<string>[],
 ): Promise<ContextTreeNode>[] {
-    return entries
-        .filter((entry) => entry.isDirectory())
-        .map((dir) =>
-            loadContextTreeNode({
-                directory: path.join(dir.parentPath, dir.name),
-                sourceDirectory: params.sourceDirectory,
-                parentContext: params.parentContext,
-                rootContext: params.rootContext,
-                type: "page",
-            }),
-        );
+    const filteredEntries = entries.filter((entry) => entry.isDirectory());
+    params.logger.info(
+        `loading the following directories as page children: ${filteredEntries.map((ent) => ent.name).join(",")}`,
+    );
+    return filteredEntries.map((dir) =>
+        loadContextTreeNode({
+            directory: path.join(dir.parentPath, dir.name),
+            sourceDirectory: params.sourceDirectory,
+            parentContext: params.parentContext,
+            rootContext: params.rootContext,
+            type: "page",
+            baseLogger: params.baseLogger,
+        }),
+    );
 }
 function loadFileChildren(
     params: ChildLoaderParams,
     entries: Dirent<string>[],
 ): Promise<ContextTreeNode>[] {
-    return entries
-        .filter(
-            (entry) =>
-                entry.isFile() &&
-                minimatch(
-                    entry.name,
-                    params.parentContext.pagePattern as string,
-                ) &&
-                entry.name !== params.localContext.pageSource,
-        )
-        .map((file) =>
-            loadContextTreeNode({
-                directory: file.parentPath,
-                filename: file.name,
-                sourceDirectory: params.sourceDirectory,
-                parentContext: params.parentContext,
-                rootContext: params.rootContext,
-                type: "page.file",
-            }),
-        );
+    const filteredEntries = entries.filter(
+        (entry) =>
+            entry.isFile() &&
+            minimatch(entry.name, params.parentContext.pagePattern as string) &&
+            entry.name !== params.localContext.pageSource,
+    );
+    params.logger.info(
+        `loading the following files as page children: ${filteredEntries.map((ent) => ent.name).join(",")}`,
+    );
+    return filteredEntries.map((file) =>
+        loadContextTreeNode({
+            directory: file.parentPath,
+            filename: file.name,
+            sourceDirectory: params.sourceDirectory,
+            parentContext: params.parentContext,
+            rootContext: params.rootContext,
+            type: "page.file",
+            baseLogger: params.baseLogger,
+        }),
+    );
 }
 function loadAssetChildren(
     params: ChildLoaderParams,
     entries: Dirent<string>[],
 ): Promise<ContextTreeNode>[] {
-    return entries
-        .filter(
-            (entry) =>
-                entry.isFile() &&
-                minimatch(
-                    entry.name,
-                    params.parentContext.pagePattern as string,
-                ) &&
-                entry.name !== params.localContext.pageSource,
-        )
-        .map((file) =>
-            loadContextTreeNode({
-                directory: file.parentPath,
-                filename: file.name,
-                sourceDirectory: params.sourceDirectory,
-                parentContext: params.parentContext,
-                rootContext: params.rootContext,
-                type: "asset",
-            }),
-        );
+    const filteredEntries = entries.filter(
+        (entry) =>
+            entry.isFile() &&
+            minimatch(entry.name, params.parentContext.pagePattern as string) &&
+            entry.name !== params.localContext.pageSource,
+    );
+    params.logger.info(
+        `loading the following files as asset children: ${filteredEntries.map((ent) => ent.name).join(",")}`,
+    );
+    return filteredEntries.map((file) =>
+        loadContextTreeNode({
+            directory: file.parentPath,
+            filename: file.name,
+            sourceDirectory: params.sourceDirectory,
+            parentContext: params.parentContext,
+            rootContext: params.rootContext,
+            type: "asset",
+            baseLogger: params.baseLogger,
+        }),
+    );
 }

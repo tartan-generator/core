@@ -1,4 +1,5 @@
 import { loadObject } from "../../src/inputs/file-object.js";
+import { nullLogger } from "../helpers/logs.js";
 import { makeTempFile, tempDir } from "../utils/filesystem.js";
 import path from "node:path";
 
@@ -16,6 +17,7 @@ describe("The file object loader", () => {
         const result = await loadObject(
             path.join(parsedFilename.dir, parsedFilename.name),
             {},
+            nullLogger,
         );
         expect(result.value).toEqual(object);
     });
@@ -32,6 +34,7 @@ describe("The file object loader", () => {
         const result = await loadObject(
             path.join(parsedFilename.dir, parsedFilename.name),
             {},
+            nullLogger,
         );
 
         expect(result.value).toEqual(object);
@@ -53,6 +56,7 @@ describe("The file object loader", () => {
         const result = await loadObject(
             path.join(parsedFilename.dir, parsedFilename.name),
             {},
+            nullLogger,
         );
 
         expect(result.value).toEqual(object);
@@ -65,6 +69,7 @@ describe("The file object loader", () => {
         const result = await loadObject(
             path.join(tempDir(), "not-a-real-basename"),
             defaultObject,
+            nullLogger,
         );
 
         expect(result.value).toEqual(defaultObject);

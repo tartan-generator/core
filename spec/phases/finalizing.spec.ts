@@ -11,6 +11,7 @@ import path from "path";
 import { TartanContextFile } from "../../src/types/tartan-context.js";
 import { resolveNode } from "../../src/phases/resolving.js";
 import { finalizeNode } from "../../src/phases/finalizing.js";
+import { nullLogger } from "../helpers/logs.js";
 
 describe("The node finalizer", () => {
     describe("when executing source finalizers", () => {
@@ -30,7 +31,9 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
+
             const processedNode: ProcessedNode = await processNode({
                 node: node,
                 sourceDirectory: tmpDir,
@@ -38,6 +41,7 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
@@ -72,6 +76,7 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
@@ -80,6 +85,7 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
@@ -118,6 +124,7 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
@@ -126,6 +133,7 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
@@ -165,6 +173,7 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
@@ -173,6 +182,7 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
@@ -215,6 +225,7 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
@@ -223,6 +234,7 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
@@ -260,6 +272,7 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const processedNode: ProcessedNode = await processNode({
                 node: node,
@@ -268,6 +281,7 @@ describe("The node finalizer", () => {
                     pageMode: "directory",
                     pageSource: "source.txt",
                 },
+                baseLogger: nullLogger,
             });
             const resolvedNode: ResolvedNode = resolveNode(processedNode);
             const finalizedNode: ResolvedNode = await finalizeNode({
@@ -295,6 +309,7 @@ describe("The node finalizer", () => {
                 pageMode: "directory",
                 pageSource: "source.txt",
             },
+            baseLogger: nullLogger,
         });
         const processedNode: ProcessedNode = await processNode({
             node: node,
@@ -303,6 +318,7 @@ describe("The node finalizer", () => {
                 pageMode: "directory",
                 pageSource: "source.txt",
             },
+            baseLogger: nullLogger,
         });
         const resolvedNode: ResolvedNode = resolveNode(processedNode);
         const finalizedNode: ResolvedNode = await finalizeNode({

@@ -3,6 +3,7 @@ import { ProcessedNode } from "../types/nodes.js";
 import { FullTartanContext } from "./tartan-context.js";
 import { ResolvedNode } from "./nodes.js";
 import { URLSearchParams } from "node:url";
+import { Logger } from "winston";
 
 export type SourceProcessor = {
     process?: (input: SourceProcessorInput) => Promise<SourceProcessorOutput>;
@@ -52,6 +53,10 @@ export type SourceProcessorInput = {
      * The cumulative list of all dependencies specified by previous source processors
      */
     dependencies: string[];
+    /**
+     * The winston logger for this node (with all metadata set up)
+     */
+    logger: Logger;
 };
 export type SourceProcessorOutput = {
     /**

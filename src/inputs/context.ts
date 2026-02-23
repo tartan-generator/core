@@ -9,6 +9,7 @@ import { PrefixMap, resolvePath } from "./resolve.js";
 import { SourceProcessor } from "../types/source-processor.js";
 import { loadModule } from "./module.js";
 import { HandoffHandler } from "../types/handoff-handler.js";
+import { Logger } from "winston";
 
 /**
  * Initialize a context by resolving path prefixes and loading source processors/handoff handlers.
@@ -19,7 +20,9 @@ import { HandoffHandler } from "../types/handoff-handler.js";
 export async function initializeContext(
     initialPrefixMap: PrefixMap,
     contextFile: TartanInput<TartanContextFile>,
+    logger: Logger,
 ): Promise<TartanInput<PartialTartanContext>> {
+    logger.debug("resolving path prefixes");
     const resolvedPathPrefixes: Record<string, string> | undefined = contextFile
         .value.pathPrefixes
         ? Object.fromEntries(
@@ -36,6 +39,7 @@ export async function initializeContext(
           )
         : undefined;
 
+    logger.debug("resolving and importing source processors");
     const sourceProcessors: FullTartanContext["sourceProcessors"] = contextFile
         .value.sourceProcessors
         ? await Promise.all(
@@ -49,11 +53,13 @@ export async function initializeContext(
                               ...resolvedPathPrefixes,
                           },
                       ),
+                      logger,
                   ),
               ),
           )
         : undefined;
 
+    logger.debug("resolving and importing handoff handler");
     const handoffHandler: FullTartanContext["handoffHandler"] = contextFile
         .value.handoffHandler
         ? await loadModule<HandoffHandler>(
@@ -65,8 +71,11 @@ export async function initializeContext(
                       ...resolvedPathPrefixes,
                   },
               ),
+              logger,
           )
         : undefined;
+
+    logger.debug("resolving and importing asset source processors");
     const assetProcessors: FullTartanContext["assetProcessors"] = contextFile
         .value.assetProcessors
         ? Object.fromEntries(
@@ -87,6 +96,7 @@ export async function initializeContext(
                                               ...resolvedPathPrefixes,
                                           },
                                       ),
+                                      logger,
                                   ),
                               ),
                           ).then((module) => [key, module]),
