@@ -1,6 +1,7 @@
 import { URLSearchParams } from "node:url";
 import { ResolvedNode } from "./nodes.js";
 import { FullTartanContext } from "./tartan-context.js";
+import { Logger } from "winston";
 
 export type HandoffHandler = {
     process?: (input: HandoffHandlerInput) => Promise<HandoffHandlerOutput>;
@@ -35,6 +36,10 @@ export type HandoffHandlerInput = {
      * Whether the node is a file or not
      */
     isFile: boolean;
+    /**
+     * The winston logger for this node (with all metadata set up)
+     */
+    logger: Logger;
 };
 export type HandoffHandlerOutput = {
     /**

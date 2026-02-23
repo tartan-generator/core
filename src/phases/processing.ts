@@ -87,6 +87,7 @@ export async function processNode(params: {
                 stagingDirectory: node.stagingDirectory,
                 isRoot: isRoot,
                 isFile: node.type === "handoff.file",
+                logger: logger,
             });
         }
         logger.debug(
@@ -198,6 +199,7 @@ export async function processNode(params: {
                         isRoot,
                         children: processedChildren,
                         dependencies: cumulative.dependencies,
+                        logger,
                     });
 
                 // update transient params again

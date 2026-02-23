@@ -52,6 +52,7 @@ export async function finalizeNode(params: {
                 isRoot: node === rootNode,
                 thisNode: node,
                 rootNode: rootNode,
+                logger,
             });
         }
     } else {
@@ -137,6 +138,7 @@ export async function finalizeNode(params: {
                         isRoot: node === rootNode,
                         thisNode: node,
                         rootNode: rootNode,
+                        logger,
                     });
 
                 // update transient params again
