@@ -3,3 +3,4 @@
 - At the moment, there's no handling of duplicate nodes, meaning that if two nodes both load the same path as a derived node, two separate nodes will be created. Tbh, I'm not sure if that's really a problem. I imagine that if a path is used in multiple places it should be put in an assets directory and loaded with the `asset` page mode. I should add a path prefix or some other way for a path to be marked as non-dependable. Individual source processors can ofc handle it on their own, but having a standard would be good.
 - Context inheritance should be better. Merging object like `assetProcessors` and `extraContext`.
 - What if there's no source file? Do I skip? Provide source processors with an empty buffer? Error?
+- Pretty error logs
