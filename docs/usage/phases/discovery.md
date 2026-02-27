@@ -36,5 +36,5 @@ With that information, loading a node consists of the following steps:
 5. Try to load children.
     - If the node is of type `page.file`, `asset`, `handoff`, or `handoff.file`, it can have no children.
     - If the page mode (as defined by the node's local context) is `page`, all subdirectories are loaded as child nodes with the `page` type.
-    - If the page mode is `file`, subdirectories and files that match the `pagePattern` and don't match the `pageSource` local context properties are loaded as children. Files with the `page.file` type, and directories with the `page` type.
+    - If the page mode is `file`, subdirectories and files that match the `pagePattern` are loaded as children (files with the `page.file` type, and directories with the `page` type). The file specified by the `pageSource` local context property and any possible context object files are ignored, even if they match `pagePattern`.
     - If the page mode is `asset`, child nodes are loaded in the same manner as the `file` page mode, except that files are given the `asset` type.

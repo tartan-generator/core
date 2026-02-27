@@ -8,14 +8,14 @@ import { URL } from "node:url";
 import { pathToFileURL } from "./resolve.js";
 import { Logger } from "winston";
 
-const objectFileExtensionOrder = [".ts", ".mts", ".js", ".mjs", ".json"];
-const objectFileExtensionSet = new Set(objectFileExtensionOrder);
-const moduleFileExtensions = new Set(objectFileExtensionOrder.slice(0, -1));
+export const objectFileExtensions = [".ts", ".mts", ".js", ".mjs", ".json"];
+const objectFileExtensionSet = new Set(objectFileExtensions);
+const moduleFileExtensions = new Set(objectFileExtensions.slice(0, -1));
 /**
  * Mapping extension names into indexes so sorts are easily sortable
  */
 const extensionIndexMap: { [key: string]: number } =
-    objectFileExtensionOrder.reduce(
+    objectFileExtensions.reduce(
         (prev, curr, i) => ({ ...prev, [curr]: i }),
         {} as { [key: string]: number },
     );

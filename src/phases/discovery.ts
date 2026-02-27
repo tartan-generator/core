@@ -5,7 +5,7 @@ import {
 } from "../types/tartan-context.js";
 import path from "node:path";
 import { TartanInput } from "../types/inputs.js";
-import { loadObject } from "../inputs/file-object.js";
+import { loadObject, objectFileExtensions } from "../inputs/file-object.js";
 import { initializeContext } from "../inputs/context.js";
 import { minimatch } from "minimatch";
 import { Dirent } from "node:fs";
@@ -118,6 +118,10 @@ export async function loadContextTreeNode(params: {
                 : "handoff"
             : (params.type ?? "page");
 
+    const ignoredPaths: string[] = objectFileExtensions.flatMap((extension) => [
+        path.basename(localContextFilename + extension),
+        path.basename(defaultContextFilename + extension),
+    ]);
     const children = await loadChildren(
         {
             rootContext: params.rootContext,
@@ -127,6 +131,7 @@ export async function loadContextTreeNode(params: {
             type: type,
             logger: logger,
             baseLogger: params.baseLogger,
+            ignored: ignoredPaths,
         },
         resolvedDirectory,
     );
@@ -149,6 +154,7 @@ type ChildLoaderParams = {
     sourceDirectory: string;
     parentContext: FullTartanContext;
     localContext: FullTartanContext;
+    ignored: string[];
     type: NodeType;
     /**
      * The local logger with phase and everything else set up.
@@ -196,11 +202,18 @@ async function loadChildren(
     }
 }
 
+function isIgnored(ignoredGlobs: string[], string: string): boolean {
+    return ignoredGlobs.some((glob) => minimatch(glob, string));
+}
+
 function loadDirectoryChildren(
     params: ChildLoaderParams,
     entries: Dirent<string>[],
 ): Promise<ContextTreeNode>[] {
-    const filteredEntries = entries.filter((entry) => entry.isDirectory());
+    const filteredEntries = entries.filter(
+        (entry) =>
+            entry.isDirectory() && !isIgnored(params.ignored, entry.name),
+    );
     params.logger.info(
         `loading the following directories as page children: ${filteredEntries.map((ent) => ent.name).join(",")}`,
     );
@@ -222,8 +235,9 @@ function loadFileChildren(
     const filteredEntries = entries.filter(
         (entry) =>
             entry.isFile() &&
-            minimatch(entry.name, params.parentContext.pagePattern as string) &&
-            entry.name !== params.localContext.pageSource,
+            entry.name !== params.localContext.pageSource &&
+            minimatch(entry.name, params.localContext.pagePattern as string) &&
+            !isIgnored(params.ignored, entry.name),
     );
     params.logger.info(
         `loading the following files as page children: ${filteredEntries.map((ent) => ent.name).join(",")}`,
@@ -247,8 +261,9 @@ function loadAssetChildren(
     const filteredEntries = entries.filter(
         (entry) =>
             entry.isFile() &&
-            minimatch(entry.name, params.parentContext.pagePattern as string) &&
-            entry.name !== params.localContext.pageSource,
+            entry.name !== params.localContext.pageSource &&
+            minimatch(entry.name, params.localContext.pagePattern as string) &&
+            !isIgnored(params.ignored, entry.name),
     );
     params.logger.info(
         `loading the following files as asset children: ${filteredEntries.map((ent) => ent.name).join(",")}`,

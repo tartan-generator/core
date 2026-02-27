@@ -206,6 +206,76 @@ describe("The context tree loader", () => {
 
     // Loading children
     describe("when loading children", () => {
+        it("should use the pagePattern from local context, not parent context", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "file",
+                pageSource: "index.md",
+                pagePattern: "*",
+            };
+
+            const tmpDir = await makeTempFiles({
+                "a/tartan.context.json": JSON.stringify(<TartanContextFile>{
+                    pageMode: "file",
+                    pagePattern: "*.md",
+                }),
+                "a/file.md": "child",
+                "a/file.nomatch": "not a child",
+
+                "b/tartan.context.json": JSON.stringify(<TartanContextFile>{
+                    pageMode: "file",
+                    pagePattern: "*.md",
+                }),
+                "b/file.md": "child",
+                "b/file.nomatch": "not a child",
+            });
+
+            const a = await loadContextTreeNode({
+                directory: path.join(tmpDir, "a"),
+                rootContext,
+                baseLogger: nullLogger,
+            });
+            const b = await loadContextTreeNode({
+                directory: path.join(tmpDir, "b"),
+                rootContext,
+                baseLogger: nullLogger,
+            });
+
+            expect(a.children).toHaveSize(1);
+            expect(b.children).toHaveSize(1);
+        });
+        it("should ignore context files when they match pagePattern", async () => {
+            const rootContext: FullTartanContext = {
+                pageMode: "file",
+                pageSource: "index.md",
+                pagePattern: "*",
+            };
+
+            const tmpDir = await makeTempFiles({
+                "a/tartan.context.json": "{}",
+                "a/tartan.context.default.json": "{}",
+                "a/child.md": "I'm a child uwuwuwuwuwu",
+                "b/child.md": " waow",
+                "b/tartan.context.default.json": "{}",
+                "b/tartan.context.json": JSON.stringify(<TartanContextFile>{
+                    pageMode: "asset",
+                    pagePattern: "*",
+                }),
+            });
+
+            const a = await loadContextTreeNode({
+                directory: path.join(tmpDir, "a"),
+                rootContext,
+                baseLogger: nullLogger,
+            });
+            const b = await loadContextTreeNode({
+                directory: path.join(tmpDir, "b"),
+                rootContext,
+                baseLogger: nullLogger,
+            });
+
+            expect(a.children).toHaveSize(1);
+            expect(b.children).toHaveSize(1);
+        });
         describe("when `pageMode` is `directory`", () => {
             it("should load child and initialize contexts", async () => {
                 const rootContext: FullTartanContext = {
