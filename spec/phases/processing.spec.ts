@@ -4,11 +4,48 @@ import { ContextTreeNode, ProcessedNode } from "../../src/types/nodes.js";
 import { getTempFile, makeTempFiles } from "../utils/filesystem.js";
 import fs from "fs/promises";
 import path from "path";
-import { TartanContextFile } from "../../src/types/tartan-context.js";
+import {
+    FullTartanContext,
+    TartanContextFile,
+} from "../../src/types/tartan-context.js";
 import { nullLogger } from "../helpers/logs.js";
 
 describe("The node processor", () => {
     describe("when executing source processors", () => {
+        it("should resolve source file properly for all nodes", async () => {
+            const tmpDir = await makeTempFiles({
+                "src/index.md": "source uwu",
+                "src/child/index.md": "child owo",
+            });
+            const rootContext: FullTartanContext = {
+                pageMode: "directory",
+                pageSource: "index.md",
+            };
+            const node = await loadContextTreeNode({
+                directory: path.join(tmpDir, "src"),
+                rootContext,
+                baseLogger: nullLogger,
+            });
+            const processed = await processNode({
+                node,
+                rootContext,
+                sourceDirectory: path.join(tmpDir, "src"),
+                baseLogger: nullLogger,
+            });
+            const baseSource: string = await fs
+                .readFile(path.join(processed.stagingDirectory, "processed"))
+                .then((val) => val.toString());
+            const childSource: string = await fs
+                .readFile(
+                    path.join(
+                        processed.baseChildren[0].stagingDirectory,
+                        "processed",
+                    ),
+                )
+                .then((val) => val.toString());
+            expect(baseSource).toBe("source uwu");
+            expect(childSource).toBe("child owo");
+        });
         it("should resolve page source using path prefixes", async () => {
             process.env["ASDF"] = "yes";
             const prefixContext = (prefixPath: string): string =>

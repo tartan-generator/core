@@ -143,7 +143,7 @@ export async function processNode(params: {
         if (node.type === "page") {
             sourcePath = resolvePath(
                 node.context.pageSource!,
-                path.resolve(node.path, sourceDirectory),
+                path.resolve(sourceDirectory, node.path),
                 {
                     "~source-directory": sourceDirectory,
                     ...(node.context.pathPrefixes ?? {}),
