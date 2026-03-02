@@ -34,6 +34,7 @@ in {
     packages = with pkgs; [
       nodejs_24
       npins
+      tsx
       # great script name ik
       (pkgs.writeShellScriptBin "update-npm-stuff" ''
         npm i # ensure that package-lock is up to date
