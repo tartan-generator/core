@@ -5,3 +5,9 @@
 - What if there's no source file? Do I skip? Provide source processors with an empty buffer? Error?
 - Option to ignore directories
 - Pretty error logs
+- Hide accidental exports (context schema) (hell maybe I should ditch the whole schema thing completely and go pure TS. I can generate schemas at build time if I really need)
+- Export version info (for downstream client consumption so they don't have to do garbage with `package.json` finding)
+- rename `loadContextTreeNode` to fit it's phase name
+- Add `TartanConfig` to the core library
+- Have distinct type for after output, where `outputPath` is the actual fs path (relative to the output directory) (so like a page would be `{output path}/index.html`)
+- Maybe add output file/block size after nodes are finalized?
