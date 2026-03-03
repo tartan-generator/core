@@ -36,7 +36,7 @@ export type SourceProcessorInput = {
     /**
      * The location of the source file, relative to the source directory.
      */
-    sourcePath: string;
+    sourcePath: URL | undefined;
     /**
      * The output path (relative to the parent node) as defined by previous source processors.
      */

@@ -6,7 +6,7 @@ import { TartanInput } from "../types/inputs.js";
 import { ContextTreeNode, ProcessedNode } from "../types/nodes.js";
 import { FullTartanContext } from "../types/tartan-context.js";
 import fs from "fs/promises";
-import { pathToFileURL, resolvePath } from "../inputs/resolve.js";
+import { resolvePath } from "../inputs/resolve.js";
 import path from "path";
 import {
     SourceProcessor,
@@ -17,10 +17,16 @@ import { minimatch } from "minimatch";
 import { buffer } from "stream/consumers";
 import { Readable } from "stream";
 import { loadContextTreeNode } from "./discovery.js";
-import { URL } from "node:url";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
 import { Logger } from "winston";
+
+const nullBuffer = Buffer.alloc(0);
+const nullStream = new Readable({
+    read() {
+        this.push(null);
+    },
+});
 
 export async function processNode(params: {
     node: ContextTreeNode;
@@ -98,6 +104,7 @@ export async function processNode(params: {
         return {
             id: node.id,
             path: node.path,
+            sourcePath: node.sourcePath,
             type: node.type,
             outputPath: output.outputPath,
             stagingDirectory: node.stagingDirectory,
@@ -114,9 +121,13 @@ export async function processNode(params: {
          */
         // find the source processor list to use
         let sourceProcessors: TartanInput<SourceProcessor>[];
-        if (node.type === "page" || node.type === "page.file") {
+        if (
+            node.type === "page" ||
+            node.type === "page.file" ||
+            node.type === "container"
+        ) {
             logger.debug(
-                `node is a page, using the regular source processor list`,
+                `node is a ${node.type}, using the regular source processor list`,
             );
             sourceProcessors = node.context.sourceProcessors ?? [];
         } else if (node.type === "asset") {
@@ -138,41 +149,30 @@ export async function processNode(params: {
         }
         logger.info(`found ${sourceProcessors.length} processors to execute`);
 
-        // set up the source file path
-        let sourcePath: URL;
-        if (node.type === "page") {
-            sourcePath = resolvePath(
-                node.context.pageSource!,
-                path.resolve(sourceDirectory, node.path),
-                {
-                    "~source-directory": sourceDirectory,
-                    ...(node.context.pathPrefixes ?? {}),
-                },
+        if (node.sourcePath)
+            logger.debug(
+                `loading initial source from ${node.sourcePath.pathname}`,
             );
-        } else if (node.type === "page.file" || node.type === "asset") {
-            sourcePath = pathToFileURL(
-                path.resolve(sourceDirectory, node.path),
-            );
-        } else {
-            throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
-        }
-
-        logger.debug(`loading initial source from ${sourcePath.pathname}`);
-
         /*
          * Set up all the transient params (passed from processor to processor)
          */
         const cumulative = {
-            getSourceBuffer: (() =>
-                fs.readFile(
-                    sourcePath,
-                )) as SourceProcessorInput["getSourceBuffer"],
-            getSourceStream: (() =>
-                fs
-                    .open(sourcePath)
-                    .then((handle) =>
-                        handle.createReadStream(),
-                    )) as SourceProcessorInput["getSourceStream"],
+            getSourceBuffer:
+                node.type === "container"
+                    ? async () => nullBuffer
+                    : ((() =>
+                          fs.readFile(
+                              node.sourcePath!, // should only be undefined if node type is container
+                          )) as SourceProcessorInput["getSourceBuffer"]),
+            getSourceStream:
+                node.type === "container"
+                    ? async () => nullStream
+                    : ((() =>
+                          fs
+                              .open(node.sourcePath!)
+                              .then((handle) =>
+                                  handle.createReadStream(),
+                              )) as SourceProcessorInput["getSourceStream"]),
             sourceMetadata: {} as SourceProcessorInput["sourceMetadata"],
             outputPath: undefined as SourceProcessorInput["outputPath"],
             dependencies: [] as string[],
@@ -195,7 +195,7 @@ export async function processNode(params: {
                         extraContext: node.context.extraContext,
                         pathParameters: processor.url.searchParams,
                         sourceMetadata: cumulative.sourceMetadata,
-                        sourcePath: sourcePath.pathname,
+                        sourcePath: node.sourcePath,
                         outputPath: cumulative.outputPath,
                         isRoot,
                         children: processedChildren,
@@ -204,15 +204,17 @@ export async function processNode(params: {
                     });
 
                 // update transient params again
-                const contents = output.processedContents;
-                cumulative.getSourceBuffer =
-                    contents instanceof Buffer
-                        ? async () => contents
-                        : async () => buffer(contents as Readable);
-                cumulative.getSourceStream =
-                    contents instanceof Readable
-                        ? async () => contents
-                        : async () => Readable.from(contents as Buffer);
+                if (node.type !== "container") {
+                    const contents = output.processedContents;
+                    cumulative.getSourceBuffer =
+                        contents instanceof Buffer
+                            ? async () => contents
+                            : async () => buffer(contents as Readable);
+                    cumulative.getSourceStream =
+                        contents instanceof Readable
+                            ? async () => contents
+                            : async () => Readable.from(contents as Buffer);
+                }
                 cumulative.sourceMetadata = {
                     ...cumulative.sourceMetadata,
                     ...output.sourceMetadata,
@@ -224,10 +226,24 @@ export async function processNode(params: {
                         cumulative.dependencies.concat(
                             (output.dependencies ?? []).map(
                                 // resolve relative to the source file
-                                (dependency) =>
-                                    resolvePath(
+                                (dependency) => {
+                                    const pat = resolvePath(
                                         dependency,
-                                        path.dirname(sourcePath.pathname),
+                                        node.sourcePath
+                                            ? path.dirname(
+                                                  node.sourcePath.pathname,
+                                              )
+                                            : node.type === "page"
+                                              ? path.resolve(
+                                                    sourceDirectory,
+                                                    node.path,
+                                                )
+                                              : path.dirname(
+                                                    path.resolve(
+                                                        sourceDirectory,
+                                                        node.path,
+                                                    ),
+                                                ),
                                         {
                                             "~source-directory":
                                                 sourceDirectory,
@@ -239,7 +255,9 @@ export async function processNode(params: {
                                                 processor.url.pathname,
                                             ),
                                         },
-                                    ).pathname,
+                                    ).pathname;
+                                    return pat;
+                                },
                             ),
                         ),
                     ),
@@ -253,10 +271,14 @@ export async function processNode(params: {
         // write to output file
         // note: I considered using fs.copyFile if there were no source processors,
         // but that shouldn't drastically improve performance, and I feel like this is more maintainable.
-        await pipeline(
-            await cumulative.getSourceStream(),
-            createWriteStream(path.join(node.stagingDirectory, "processed")),
-        );
+        if (node.type !== "container") {
+            await pipeline(
+                await cumulative.getSourceStream(),
+                createWriteStream(
+                    path.join(node.stagingDirectory, "processed"),
+                ),
+            );
+        }
 
         logger.info(
             `loading ${cumulative.dependencies.length} derived children`,
@@ -271,15 +293,19 @@ export async function processNode(params: {
                     sourceDirectory: sourceDirectory,
                     parentContext: node.inheritableContext,
                     baseLogger: params.baseLogger,
-                }).then((node) =>
-                    processNode({
-                        node,
-                        rootContext,
-                        sourceDirectory: sourceDirectory,
-                        isRoot: false,
-                        baseLogger: params.baseLogger,
-                    }),
-                ),
+                })
+                    .then((node) => {
+                        return node;
+                    })
+                    .then((node) =>
+                        processNode({
+                            node,
+                            rootContext,
+                            sourceDirectory: sourceDirectory,
+                            isRoot: false,
+                            baseLogger: params.baseLogger,
+                        }),
+                    ),
             ),
         );
 
@@ -287,6 +313,7 @@ export async function processNode(params: {
         return {
             id: node.id,
             path: node.path,
+            sourcePath: node.sourcePath,
             type: node.type,
             outputPath: cumulative.outputPath,
             stagingDirectory: node.stagingDirectory,

@@ -5,7 +5,6 @@ import { HandoffHandler } from "../types/handoff-handler.js";
 import { TartanInput } from "../types/inputs.js";
 import { ResolvedNode } from "../types/nodes.js";
 import fs from "fs/promises";
-import { resolvePath } from "../inputs/resolve.js";
 import path from "path";
 import {
     SourceFinalizerInput,
@@ -15,10 +14,15 @@ import {
 import { minimatch } from "minimatch";
 import { buffer } from "stream/consumers";
 import { Readable } from "stream";
-import { URL } from "node:url";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
 
+const nullBuffer = Buffer.alloc(0);
+const nullStream = new Readable({
+    read() {
+        this.push(null);
+    },
+});
 export async function finalizeNode(params: {
     node: ResolvedNode;
     rootNode?: ResolvedNode;
@@ -27,7 +31,6 @@ export async function finalizeNode(params: {
     const { node, rootNode = node, sourceDirectory } = params;
     const logger = node.logger.child({ phase: "finalizing" });
     logger.info(`starting the finalizing phase`);
-
     if (node.type === "handoff" || node.type === "handoff.file") {
         logger.debug(`Node is "handoff" type`);
         if (node.context.handoffHandler === undefined) {
@@ -58,9 +61,13 @@ export async function finalizeNode(params: {
     } else {
         // find the source processor list to use
         let sourceProcessors: TartanInput<SourceProcessor>[];
-        if (node.type === "page" || node.type === "page.file") {
+        if (
+            node.type === "page" ||
+            node.type === "page.file" ||
+            node.type === "container"
+        ) {
             logger.debug(
-                `node is a page, using the regular source processor list`,
+                `node is a ${node.type}, using the regular source processor list`,
             );
             sourceProcessors = node.context.sourceProcessors ?? [];
         } else if (node.type === "asset") {
@@ -82,38 +89,28 @@ export async function finalizeNode(params: {
         }
         logger.info(`found ${sourceProcessors.length} processors to execute`);
 
-        // set up the source file path
-        let filepath: URL;
-        if (node.type === "page") {
-            filepath = resolvePath(
-                node.context.pageSource!,
-                path.resolve(node.path, sourceDirectory),
-                {
-                    "~source-directory": sourceDirectory,
-                },
-            );
-        } else if (node.type === "page.file" || node.type === "asset") {
-            filepath = resolvePath(node.path, sourceDirectory, {
-                "~source-directory": sourceDirectory,
-            });
-        } else {
-            throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
-        }
-
         /*
          * Set up all the transient params (passed from processor to processor)
          */
         const cumulative = {
-            getSourceBuffer: (() =>
-                fs.readFile(
-                    path.join(node.stagingDirectory, "processed"),
-                )) as SourceFinalizerInput["getSourceBuffer"],
-            getSourceStream: (() =>
-                fs
-                    .open(path.join(node.stagingDirectory, "processed"))
-                    .then((handle) =>
-                        handle.createReadStream(),
-                    )) as SourceFinalizerInput["getSourceStream"],
+            getSourceBuffer:
+                node.type === "container"
+                    ? async () => nullBuffer
+                    : ((() =>
+                          fs.readFile(
+                              path.join(node.stagingDirectory, "processed"),
+                          )) as SourceFinalizerInput["getSourceBuffer"]),
+            getSourceStream:
+                node.type === "container"
+                    ? async () => nullStream
+                    : ((() =>
+                          fs
+                              .open(
+                                  path.join(node.stagingDirectory, "processed"),
+                              )
+                              .then((handle) =>
+                                  handle.createReadStream(),
+                              )) as SourceFinalizerInput["getSourceStream"]),
         };
 
         /*
@@ -133,7 +130,7 @@ export async function finalizeNode(params: {
                         extraContext: node.context.extraContext,
                         pathParameters: processor.url.searchParams,
                         sourceMetadata: node.metadata,
-                        sourcePath: filepath.pathname,
+                        sourcePath: node.sourcePath,
                         outputPath: node.outputPath,
                         isRoot: node === rootNode,
                         thisNode: node,
@@ -142,15 +139,17 @@ export async function finalizeNode(params: {
                     });
 
                 // update transient params again
-                const contents = output;
-                cumulative.getSourceBuffer =
-                    contents instanceof Buffer
-                        ? async () => contents
-                        : async () => buffer(contents as Readable);
-                cumulative.getSourceStream =
-                    contents instanceof Readable
-                        ? async () => contents
-                        : async () => Readable.from(contents as Buffer);
+                if (node.type !== "container") {
+                    const contents = output;
+                    cumulative.getSourceBuffer =
+                        contents instanceof Buffer
+                            ? async () => contents
+                            : async () => buffer(contents as Readable);
+                    cumulative.getSourceStream =
+                        contents instanceof Readable
+                            ? async () => contents
+                            : async () => Readable.from(contents as Buffer);
+                }
             }
         }
         logger.info("finished running all finalizers");
@@ -159,10 +158,14 @@ export async function finalizeNode(params: {
         // write to output file
         // note: I considered using fs.copyFile if there were no source processors,
         // but that shouldn't drastically improve performance, and I feel like this is more maintainable.
-        await pipeline(
-            await cumulative.getSourceStream(),
-            createWriteStream(path.join(node.stagingDirectory, "finalized")),
-        );
+        if (node.type !== "container") {
+            await pipeline(
+                await cumulative.getSourceStream(),
+                createWriteStream(
+                    path.join(node.stagingDirectory, "finalized"),
+                ),
+            );
+        }
     }
 
     logger.info("waiting for children finalize");
