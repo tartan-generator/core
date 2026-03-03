@@ -8,13 +8,142 @@ import {
 import { makeTempFiles, tempDir } from "../utils/filesystem.js";
 import fs from "fs/promises";
 import path from "path";
-import { TartanContextFile } from "../../src/types/tartan-context.js";
+import {
+    FullTartanContext,
+    TartanContextFile,
+} from "../../src/types/tartan-context.js";
 import { resolveNode } from "../../src/phases/resolving.js";
 import { finalizeNode } from "../../src/phases/finalizing.js";
 import { nullLogger } from "../helpers/logs.js";
+import { pathToFileURL } from "../../src/inputs/resolve.js";
 
 describe("The node finalizer", () => {
     describe("when executing source finalizers", () => {
+        it("should pass a null buffer for source if type is `container`", async () => {
+            const tmpDir = await makeTempFiles({
+                index: "hello world",
+            });
+
+            const rootContext: FullTartanContext = {
+                pageMode: "container",
+                pageSource: "index",
+                sourceProcessors: [
+                    {
+                        url: pathToFileURL("meow"),
+                        value: {
+                            finalize: async (input) => {
+                                const buffer = await input.getSourceBuffer();
+                                if (buffer.length !== 0) throw "bad buffer";
+                                return buffer;
+                            },
+                        },
+                    },
+                ],
+            };
+            const node = await loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+                baseLogger: nullLogger,
+            });
+            const processed = await processNode({
+                node,
+                rootContext,
+                sourceDirectory: tmpDir,
+                baseLogger: nullLogger,
+            });
+            const resolved = resolveNode(processed);
+            const finalized = await finalizeNode({
+                node: resolved,
+                sourceDirectory: tmpDir,
+            });
+
+            // no expect needed, we just need this all to run without erroring
+        });
+        it("should pass a null stream for source if type is `container`", async () => {
+            const tmpDir = await makeTempFiles({
+                index: "hello world",
+            });
+
+            const rootContext: FullTartanContext = {
+                pageMode: "container",
+                pageSource: "index",
+                sourceProcessors: [
+                    {
+                        url: pathToFileURL("meow"),
+                        value: {
+                            finalize: async (input) => {
+                                const stream = await input.getSourceStream();
+                                if (stream.read() !== null) throw "bad buffer";
+                                return stream;
+                            },
+                        },
+                    },
+                ],
+            };
+            const node = await loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+                baseLogger: nullLogger,
+            });
+            const processed = await processNode({
+                node,
+                rootContext,
+                sourceDirectory: tmpDir,
+                baseLogger: nullLogger,
+            });
+            const resolved = resolveNode(processed);
+            const finalized = await finalizeNode({
+                node: resolved,
+                sourceDirectory: tmpDir,
+            });
+
+            // no expect needed, we just need this all to run without erroring
+        });
+        it("shouldn't write to staging dir if type is container", async () => {
+            const tmpDir = await makeTempFiles({
+                index: "hello world",
+            });
+
+            const rootContext: FullTartanContext = {
+                pageMode: "container",
+                pageSource: "index",
+                sourceProcessors: [
+                    {
+                        url: pathToFileURL("meow"),
+                        value: {
+                            finalize: async (input) => {
+                                const stream = await input.getSourceStream();
+                                if (stream.read() !== null) throw "bad buffer";
+                                return stream;
+                            },
+                        },
+                    },
+                ],
+            };
+            const node = await loadContextTreeNode({
+                directory: tmpDir,
+                rootContext,
+                baseLogger: nullLogger,
+            });
+            const processed = await processNode({
+                node,
+                rootContext,
+                sourceDirectory: tmpDir,
+                baseLogger: nullLogger,
+            });
+            const resolved = resolveNode(processed);
+            const finalized = await finalizeNode({
+                node: resolved,
+                sourceDirectory: tmpDir,
+            });
+
+            const exists: boolean = await fs
+                .access(path.join(processed.stagingDirectory, "finalized"))
+                .then(() => true)
+                .catch(() => false);
+
+            expect(exists).toBe(false);
+        });
         it("should execute for all children", async () => {
             const tmpDir = await makeTempFiles({
                 "source.txt": "hello world",

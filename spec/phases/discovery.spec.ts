@@ -16,6 +16,47 @@ import path from "path";
 import { nullLogger } from "../helpers/logs.js";
 
 describe("The context tree loader", () => {
+    it("should set node type to `container` if page source doesn't exist", async () => {
+        const tmpDir: string = await makeTempFiles({});
+
+        const node: ContextTreeNode = await loadContextTreeNode({
+            directory: tmpDir,
+            baseLogger: nullLogger,
+            rootContext: {
+                pageMode: "directory",
+                pageSource: "nomatter",
+            },
+        });
+
+        expect(node.type).toBe("container");
+    });
+    it("should set node type to `container` if page mode is `container`", async () => {
+        const tmpDir: string = await makeTempFiles({});
+        const node: ContextTreeNode = await loadContextTreeNode({
+            directory: tmpDir,
+            rootContext: {
+                pageMode: "container",
+            },
+            baseLogger: nullLogger,
+        });
+
+        expect(node.type).toBe("container");
+    });
+    it("should set node type to `container` if page mode is `container`, even if pageSource exists", async () => {
+        const tmpDir: string = await makeTempFiles({
+            index: "hello world",
+        });
+        const node: ContextTreeNode = await loadContextTreeNode({
+            directory: tmpDir,
+            rootContext: {
+                pageMode: "container",
+                pageSource: "index",
+            },
+            baseLogger: nullLogger,
+        });
+
+        expect(node.type).toBe("container");
+    });
     it("should treat `directory` as the root directory when `rootDirectory` is undefined", async () => {
         const rootContext: FullTartanContext = {
             pageMode: "directory",
