@@ -76,7 +76,7 @@ export async function finalizeNode(params: {
             );
             const match = Object.entries(
                 node.context.assetProcessors ?? {},
-            ).find(([glob]) => minimatch(node.path, glob));
+            ).find(([glob]) => minimatch(path.basename(node.path), glob));
             if (match) {
                 logger.debug(`matched glob ${match[0]}`);
                 sourceProcessors = match[1];

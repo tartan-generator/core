@@ -19,6 +19,39 @@ import { pathToFileURL } from "../../src/inputs/resolve.js";
 
 describe("The node finalizer", () => {
     describe("when executing source finalizers", () => {
+        it("should match asset processors by basename", async () => {
+            const tmpDir: string = await makeTempFiles({
+                "sub/asset.ass": "helo wold",
+                "sub/asset.ass.context.json": JSON.stringify(<
+                    TartanContextFile
+                >{
+                    assetProcessors: {
+                        "*.ass": ["./processor.js"],
+                    },
+                }),
+                "sub/processor.js": `
+                export default {process: async (params) => ({
+                    processedContents: Buffer.from("hello world"),
+                    outputPath: "image"
+                })}`,
+            });
+
+            const node: ContextTreeNode = await loadContextTreeNode({
+                directory: tmpDir,
+                rootContext: { pageMode: "asset", pagePattern: "*" },
+                baseLogger: nullLogger,
+            });
+            const processed: ProcessedNode = await processNode({
+                node,
+                sourceDirectory: tmpDir,
+                rootContext: {} as FullTartanContext,
+                baseLogger: nullLogger,
+            });
+
+            expect(processed.baseChildren[0].baseChildren[0].outputPath).toBe(
+                "image",
+            );
+        });
         it("should pass a null buffer for source if type is `container`", async () => {
             const tmpDir = await makeTempFiles({
                 index: "hello world",
