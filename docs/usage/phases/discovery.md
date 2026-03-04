@@ -29,9 +29,11 @@ With that information, loading a node consists of the following steps:
     - Local context is created by merging the `context` file contents with _this_ node's `inheritable context` (if the `inherit` property of the context file is `true`), or the `root context` (if `inherit` is `false`).
     - Merging is done by overlaying the top level properties. A local context overrides properties from the inheritable context, and the inheritable context overrides properties from the parent's inheritable context, or the root context (if the `inherit` property is false).
 
-4. Determine the node type (may have been changed to `handoff`).
+4. Determine the node type (may have been changed to `handoff` or `container`).
     - If the node's local context specifies that the page mode is `handoff`, the original node type will be overridden.
-    - If the node's original type was `page.file` or `asset`, the type will be set to `handoff.file`, otherwise it'll be set to `handoff`.
+        - If the node's original type was `page.file` or `asset`, the type will be set to `handoff.file`, otherwise it'll be set to `handoff`.
+    - If the node is `page` type, and no file exists for `pageSource`, the type will be set to `container`.
+    - If the page mode is `container`, the type will be set to container.
 
 5. Try to load children.
     - If the node is of type `page.file`, `asset`, `handoff`, or `handoff.file`, it can have no children.

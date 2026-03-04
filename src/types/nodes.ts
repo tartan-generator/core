@@ -6,7 +6,8 @@ export type NodeType =
     | "page.file"
     | "asset"
     | "handoff"
-    | "handoff.file";
+    | "handoff.file"
+    | "container";
 
 export type ContextTreeNode<T extends NodeType = NodeType> = {
     /**
@@ -22,6 +23,12 @@ export type ContextTreeNode<T extends NodeType = NodeType> = {
      * May be a directory or a file, depending on the node's type.
      */
     path: string;
+    /**
+     * The path to load for this node's source.
+     * It is not guaranteed that this path will actually exist on disk in the case of handoff or container nodes.
+     * Will always point to a file.
+     */
+    sourcePath: URL | undefined;
     /**
      * The local context object for this node.
      */
@@ -50,6 +57,12 @@ export type ProcessedNode = {
      * The path of this node, relative to the source directory.
      */
     path: string;
+    /**
+     * The path to load for this node's source.
+     * It is not guaranteed that this path will actually exist on disk in the case of handoff or container nodes.
+     * Will always point to a file.
+     */
+    sourcePath: URL | undefined;
     /**
      * The type of the node.
      */

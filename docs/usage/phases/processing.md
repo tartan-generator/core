@@ -6,7 +6,7 @@ The steps for processing a node are as follows:
 
 ## 1. Process Child Nodes
 
-Follow steps 1 and 2 for each child node, so that results can be passed into source processors for this node.
+Follow steps 1 through 3 for each child node, so that results can be passed into source processors for this node.
 
 ## 2. Run Source Processors or Handoff Handler
 
@@ -23,7 +23,7 @@ Source processor outputs feed into each other in the order they're listed. This 
 - The `outputPath` property is also cumulative. If a source processor doesn't return a value (or returns undefined) for that property, it won't be overwritten. Otherwise it will be.
 - The `dependencies` property is the combination of all previously requested dependencies, de-duplicated. The paths are resolved immediately after they're returned by a source processor, and can use the `~source-processor`, `~source-directory`, `~this-node`, and `~node-module` prefixes.
 
-If the node is of type `page` the file contents provided to the first source processor are from the file at `pageSource`, resolved relative to the node path using the path prefixes defined by the local context object, plus the reserved `~source-directory` prefix. Otherwise, if the node is `page.file` or `asset`, the file at the node path is used.
+If the node is of type `page`, `page.file`, or `asset`: The file defined by the node's `sourcePath` property is used as the initial value for source processors. If the node is a `container`, every processor is provided an empty buffer (like what `/dev/null` would provide) regardless of what the previous processor outputted.
 
 Right now, we only run the `process` function provided by the source processor (since we're in the "processing" phase).
 

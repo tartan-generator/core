@@ -14,6 +14,7 @@ import { ContextTreeNode, NodeType } from "../types/nodes.js";
 import { randomUUID } from "node:crypto";
 import { resolvePath } from "../inputs/resolve.js";
 import { Logger } from "winston";
+import { pathToFileURL } from "node:url";
 
 export async function loadContextTreeNode(params: {
     directory: string;
@@ -21,7 +22,7 @@ export async function loadContextTreeNode(params: {
     rootContext: FullTartanContext;
     sourceDirectory?: string;
     parentContext?: FullTartanContext;
-    type?: NodeType;
+    type?: Exclude<NodeType, "handoff" | "handoff.file" | "container">;
     /**
      * A logger with transport and format already set up.
      */
@@ -109,14 +110,50 @@ export async function loadContextTreeNode(params: {
               }
     ) as FullTartanContext;
 
-    // If the pageMode is handoff set to either handoff or handoff.file
-    // otherwise set to the type from params, and default to page type
-    const type: NodeType =
-        context.pageMode === "handoff"
-            ? params.type === "page.file" || params.type === "asset"
+    let type: NodeType = params.type ?? "page"; // default to page type
+
+    // resolve a source path
+    let sourcePath: URL | undefined;
+    if (type === "page") {
+        sourcePath =
+            context.pageSource === undefined
+                ? undefined
+                : resolvePath(
+                      context.pageSource,
+                      path.join(sourceDirectory, nodePath),
+                      {
+                          "~source-directory": sourceDirectory,
+                          ...(context.pathPrefixes ?? {}),
+                      },
+                  );
+    } else {
+        sourcePath = pathToFileURL(path.join(sourceDirectory, nodePath));
+    }
+
+    // override the type if necessary
+    if (context.pageMode === "handoff") {
+        type =
+            params.type === "page.file" || params.type === "asset"
                 ? "handoff.file"
-                : "handoff"
-            : (params.type ?? "page");
+                : "handoff";
+    } else if (context.pageMode === "container") {
+        type = "container";
+        sourcePath = undefined;
+    } else if (type === "page") {
+        // the path exists and is a file
+        const valid: boolean =
+            sourcePath !== undefined
+                ? await fs
+                      .stat(sourcePath)
+                      .then((stat) => stat.isFile())
+                      .catch(() => false)
+                : false;
+
+        if (!valid) {
+            type = "container";
+            sourcePath = undefined;
+        }
+    }
 
     const ignoredPaths: string[] = objectFileExtensions.flatMap((extension) => [
         `*.context${extension}`,
@@ -140,6 +177,7 @@ export async function loadContextTreeNode(params: {
     return {
         id: id,
         path: nodePath,
+        sourcePath,
         stagingDirectory: stagingDirectory,
         type: type,
         context: context,

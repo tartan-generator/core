@@ -13,7 +13,7 @@ export const tartanContextSchema = {
                 "Whether or not to inherit values from parent nodes and default context files.",
         },
         pageMode: {
-            enum: ["directory", "file", "asset", "handoff"],
+            enum: ["directory", "file", "asset", "handoff", "container"],
         },
         pagePattern: {
             type: "string",
@@ -107,7 +107,6 @@ export type FullTartanContext =
     | ReplaceTypes<
           PartialTartanContext,
           {
-              pageMode: "handoff.file";
-              handoffHandler: TartanInput<HandoffHandler>;
+              pageMode: "container";
           }
       >;
