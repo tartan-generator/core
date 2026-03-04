@@ -87,7 +87,7 @@ export async function finalizeNode(params: {
         if (node.type === "page") {
             filepath = resolvePath(
                 node.context.pageSource!,
-                path.resolve(node.path, sourceDirectory),
+                path.resolve(sourceDirectory, node.path),
                 {
                     "~source-directory": sourceDirectory,
                 },
