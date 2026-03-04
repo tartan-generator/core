@@ -119,8 +119,8 @@ export async function loadContextTreeNode(params: {
             : (params.type ?? "page");
 
     const ignoredPaths: string[] = objectFileExtensions.flatMap((extension) => [
-        path.basename(localContextFilename + extension),
-        path.basename(defaultContextFilename + extension),
+        `*.context${extension}`,
+        `*.context.default${extension}`,
     ]);
     const children = await loadChildren(
         {
@@ -203,7 +203,7 @@ async function loadChildren(
 }
 
 function isIgnored(ignoredGlobs: string[], string: string): boolean {
-    return ignoredGlobs.some((glob) => minimatch(glob, string));
+    return ignoredGlobs.some((glob) => minimatch(string, glob));
 }
 
 function loadDirectoryChildren(
