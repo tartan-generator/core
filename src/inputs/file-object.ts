@@ -19,43 +19,68 @@ const extensionIndexMap: { [key: string]: number } =
         (prev, curr, i) => ({ ...prev, [curr]: i }),
         {} as { [key: string]: number },
     );
+
 export async function loadObject<T>(
-    basename: string,
+    filepath: string,
     defaultIfNoFileExists: T,
     logger: Logger,
+    /**
+     * Whether the extension was explicitly included in `filepath`.
+     *
+     * Supported extensions are: `.ts`, `.mts`, `.js`, `.mjs`, and `.json`
+     *
+     * If set to false, will try each of the extensions listed, in order.
+     * If set to true, the extension must be one of the listed extensions.
+     */
+    hasExtension: boolean = false,
 ): Promise<TartanInput<T>> {
-    logger.debug(`trying to load object at ${basename}`);
-    const resolvedBasename: URL = pathToFileURL(path.resolve(basename));
-    const files = await fs.readdir(path.dirname(resolvedBasename.pathname), {
-        withFileTypes: true,
-    });
-    const matchingFiles: Dirent<string>[] = files
-        .filter(
-            (val) =>
-                val.isFile() &&
-                objectFileExtensionSet.has(path.parse(val.name).ext) &&
-                path.parse(val.name).name === path.basename(basename),
-        )
-        .toSorted((a, b) => {
-            const aNum = extensionIndexMap[path.parse(a.name).ext];
-            const bNum = extensionIndexMap[path.parse(b.name).ext];
+    logger.debug(`trying to load object at ${filepath}`);
+    let pathToLoad: ParsedPath | undefined = undefined;
+    const resolvedFilename: URL = pathToFileURL(path.resolve(filepath));
+    if (hasExtension) {
+        const exists: boolean = await fs
+            .stat(resolvedFilename)
+            .then((stat) => stat.isFile())
+            .catch(() => false);
+        pathToLoad = exists ? path.parse(resolvedFilename.pathname) : undefined;
+    } else {
+        const files = await fs.readdir(
+            path.dirname(resolvedFilename.pathname),
+            {
+                withFileTypes: true,
+            },
+        );
+        const matchingFiles: Dirent<string>[] = files
+            .filter(
+                (val) =>
+                    val.isFile() &&
+                    objectFileExtensionSet.has(path.parse(val.name).ext) &&
+                    path.parse(val.name).name === path.basename(filepath),
+            )
+            .toSorted((a, b) => {
+                const aNum = extensionIndexMap[path.parse(a.name).ext];
+                const bNum = extensionIndexMap[path.parse(b.name).ext];
 
-            return aNum - bNum;
-        });
-    logger.debug(`found ${matchingFiles.length} possible matches`);
+                return aNum - bNum;
+            });
+        logger.debug(`found ${matchingFiles.length} possible matches`);
 
-    const pathToLoad: ParsedPath | undefined =
-        matchingFiles.length > 0
-            ? path.parse(
-                  path.join(matchingFiles[0].parentPath, matchingFiles[0].name),
-              )
-            : undefined;
+        pathToLoad =
+            matchingFiles.length > 0
+                ? path.parse(
+                      path.join(
+                          matchingFiles[0].parentPath,
+                          matchingFiles[0].name,
+                      ),
+                  )
+                : undefined;
+    }
 
     if (pathToLoad === undefined) {
         logger.debug("falling back to default value");
         return {
             value: defaultIfNoFileExists,
-            url: resolvedBasename,
+            url: resolvedFilename,
         };
     }
 
@@ -68,14 +93,19 @@ export async function loadObject<T>(
             ).then(
                 (val) => val.value as T, // ignore the module path, instead setting it to resolvedBasename
             ),
-            url: resolvedBasename,
+            url: resolvedFilename,
         };
-    } else {
+    } else if (pathToLoad.ext === ".json") {
         logger.debug(`trying to load ${path.format(pathToLoad)} as JSON`);
         return {
             value: await loadJSON(pathToFileURL(path.format(pathToLoad))),
-            url: resolvedBasename,
+            url: resolvedFilename,
         };
+    } else {
+        logger.error(
+            `can't load ${path.format(pathToLoad)}, incompatible file type`,
+        );
+        throw `can't load ${path.format(pathToLoad)}, incompatible file type`;
     }
 }
 
