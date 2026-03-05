@@ -53,9 +53,7 @@ export async function outputNode(
 
     logger.info("waiting for children to output");
     await Promise.all(
-        node.baseChildren
-            .concat(node.derivedChildren)
-            .map((child) => outputNode(child, outputDirectory)),
+        node.children.map((child) => outputNode(child, outputDirectory)),
     );
 
     logger.info("finished outputting");

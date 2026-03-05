@@ -39,10 +39,9 @@ export function resolveNode(
     return {
         ...node,
         outputPath: resolvedPath,
-        baseChildren: node.baseChildren.map((child) =>
-            resolveNode(child, resolvedPath, false),
-        ),
-        derivedChildren: node.derivedChildren.map((child) =>
+        children: node.children.map((child) =>
+            // asset nodes are the only node type that can derive other nodes, but aren't themselves outputted as a directory.
+            // so, if this node is an asset, you need to resolve it's children relative to the parent (which should be a directory)
             resolveNode(
                 child,
                 node.type === "asset" ? parentDir : resolvedPath,

@@ -58,6 +58,10 @@ export type ProcessedNode = {
      */
     path: string;
     /**
+     * Whether this node is a `derived node`.
+     */
+    derived: boolean;
+    /**
      * The path to load for this node's source.
      * It is not guaranteed that this path will actually exist on disk in the case of handoff or container nodes.
      * Will always point to a file.
@@ -88,33 +92,19 @@ export type ProcessedNode = {
      */
     metadata: { [key: string]: any };
     /**
-     * Child nodes that existed before processing.
+     * This node's children, both derived and base.
      */
-    baseChildren: ProcessedNode[];
-    /**
-     * Child nodes that were discovered during processing.
-     */
-    derivedChildren: ProcessedNode[];
+    children: ProcessedNode[];
     /**
      * The logger object for this node.
      */
     logger: Logger;
 };
 
-export type ResolvedNode = Omit<
-    ProcessedNode,
-    "outputPath" | "baseChildren" | "derivedChildren"
-> & {
+export type ResolvedNode = Omit<ProcessedNode, "outputPath" | "children"> & {
     /**
      * The fully resolved output path of this node, relative to the output directory
      */
     outputPath: string;
-    /**
-     * Child nodes that existed before processing.
-     */
-    baseChildren: ResolvedNode[];
-    /**
-     * Child nodes that were discovered during processing.
-     */
-    derivedChildren: ResolvedNode[];
+    children: ResolvedNode[];
 };

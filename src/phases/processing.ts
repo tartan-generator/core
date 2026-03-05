@@ -45,6 +45,12 @@ export async function processNode(params: {
      * @default true
      */
     isRoot?: boolean;
+    /**
+     * Whether this node is derived during the processing phase
+     *
+     * @default false
+     */
+    derived?: boolean;
 }): Promise<ProcessedNode> {
     const logger = params.node.logger.child({ phase: "processing" });
     const { node, rootContext, sourceDirectory, isRoot = true } = params;
@@ -104,6 +110,7 @@ export async function processNode(params: {
         return {
             id: node.id,
             path: node.path,
+            derived: params.derived ?? false,
             sourcePath: node.sourcePath,
             type: node.type,
             outputPath: output.outputPath,
@@ -111,8 +118,7 @@ export async function processNode(params: {
             context: node.context,
             inheritableContext: node.inheritableContext,
             metadata: output.metadata ?? {},
-            baseChildren: processedChildren,
-            derivedChildren: [],
+            children: processedChildren,
             logger: params.node.logger,
         };
     } else {
@@ -304,6 +310,7 @@ export async function processNode(params: {
                             sourceDirectory: sourceDirectory,
                             isRoot: false,
                             baseLogger: params.baseLogger,
+                            derived: true,
                         }),
                     ),
             ),
@@ -313,6 +320,7 @@ export async function processNode(params: {
         return {
             id: node.id,
             path: node.path,
+            derived: params.derived ?? false,
             sourcePath: node.sourcePath,
             type: node.type,
             outputPath: cumulative.outputPath,
@@ -320,8 +328,7 @@ export async function processNode(params: {
             context: node.context,
             inheritableContext: node.inheritableContext,
             metadata: cumulative.sourceMetadata,
-            baseChildren: processedChildren,
-            derivedChildren,
+            children: processedChildren.concat(derivedChildren),
             logger: node.logger,
         };
     }
