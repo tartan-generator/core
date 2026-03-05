@@ -12,6 +12,39 @@ import { nullLogger } from "../helpers/logs.js";
 import { pathToFileURL } from "../../src/inputs/resolve.js";
 
 describe("The node processor", () => {
+    it("should mark derived nodes as being derived", async () => {
+        const tmpDir = await makeTempFiles({
+            "src/processor.js": `export default {process: async (input) => {
+                return {
+                    processedContents: await input.getSourceStream(),
+                    dependencies: ["a"]
+
+                }
+            }}`,
+            "src/index.md": "asdlkfa",
+            "src/tartan.context.json": JSON.stringify({
+                sourceProcessors: ["processor.js"],
+            } as TartanContextFile),
+            "src/a": "none of the content matterssssssssssssss",
+        });
+
+        const node = await loadContextTreeNode({
+            directory: path.join(tmpDir, "src"),
+            rootContext: {
+                pageMode: "directory",
+                pageSource: "index.md",
+            },
+            baseLogger: nullLogger,
+        });
+        const processedNode = await processNode({
+            node,
+            sourceDirectory: path.join(tmpDir, "src"),
+            rootContext: { pageMode: "directory", pageSource: "index.md" },
+            baseLogger: nullLogger,
+        });
+
+        expect(processedNode.children[0].derived).toBe(true);
+    });
     describe("when executing source processors", () => {
         it("should match asset processors by basename", async () => {
             const tmpDir: string = await makeTempFiles({
@@ -42,9 +75,7 @@ describe("The node processor", () => {
                 baseLogger: nullLogger,
             });
 
-            expect(processed.baseChildren[0].baseChildren[0].outputPath).toBe(
-                "image",
-            );
+            expect(processed.children[0].children[0].outputPath).toBe("image");
         });
         it("should pass a null buffer for source if type is `container`", async () => {
             const tmpDir = await makeTempFiles({
@@ -189,7 +220,7 @@ describe("The node processor", () => {
             const childSource: string = await fs
                 .readFile(
                     path.join(
-                        processed.baseChildren[0].stagingDirectory,
+                        processed.children[0].stagingDirectory,
                         "processed",
                     ),
                 )
@@ -233,7 +264,7 @@ describe("The node processor", () => {
             const childSource: string = await fs
                 .readFile(
                     path.join(
-                        processed.baseChildren[0].stagingDirectory,
+                        processed.children[0].stagingDirectory,
                         "processed",
                     ),
                 )
@@ -277,8 +308,8 @@ describe("The node processor", () => {
                 baseLogger: nullLogger,
             });
 
-            expect(processedNode.derivedChildren).toHaveSize(3);
-            expect(processedNode.derivedChildren).toEqual(
+            expect(processedNode.children).toHaveSize(3);
+            expect(processedNode.children).toEqual(
                 jasmine.arrayWithExactContents([
                     jasmine.objectContaining({
                         path: "../processor/test.txt",
@@ -467,8 +498,8 @@ describe("The node processor", () => {
                 b: "value",
             });
             expect(processedNode.outputPath).toBe("finalpath");
-            expect(processedNode.derivedChildren).toHaveSize(2);
-            expect(processedNode.derivedChildren).toEqual(
+            expect(processedNode.children).toHaveSize(2);
+            expect(processedNode.children).toEqual(
                 jasmine.arrayContaining([
                     jasmine.objectContaining({
                         path: "a.png",

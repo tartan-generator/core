@@ -170,7 +170,7 @@ export async function finalizeNode(params: {
 
     logger.info("waiting for children finalize");
     await Promise.all(
-        node.baseChildren.concat(node.derivedChildren).map((child) =>
+        node.children.map((child) =>
             finalizeNode({
                 node: child,
                 sourceDirectory: sourceDirectory,

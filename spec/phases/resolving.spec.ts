@@ -45,10 +45,8 @@ describe("The node resolver", () => {
         const resolved = resolveNode(processed);
 
         expect(resolved.outputPath).toBe(".");
-        expect(resolved.baseChildren[0].outputPath).toBe("owo");
-        expect(resolved.baseChildren[0].baseChildren[0].outputPath).toBe(
-            "owo/owo",
-        );
+        expect(resolved.children[0].outputPath).toBe("owo");
+        expect(resolved.children[0].children[0].outputPath).toBe("owo/owo");
     });
     it("should not allow nodes to set there path above their parent", async () => {
         const tmpDir = await makeTempFiles({

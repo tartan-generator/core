@@ -48,9 +48,7 @@ describe("The node finalizer", () => {
                 baseLogger: nullLogger,
             });
 
-            expect(processed.baseChildren[0].baseChildren[0].outputPath).toBe(
-                "image",
-            );
+            expect(processed.children[0].children[0].outputPath).toBe("image");
         });
         it("should pass a null buffer for source if type is `container`", async () => {
             const tmpDir = await makeTempFiles({
@@ -219,7 +217,7 @@ describe("The node finalizer", () => {
             const childOutput = await fs
                 .readFile(
                     path.join(
-                        finalizedNode.baseChildren[0].stagingDirectory,
+                        finalizedNode.children[0].stagingDirectory,
                         "finalized",
                     ),
                 )
