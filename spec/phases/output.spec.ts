@@ -2,6 +2,7 @@ import { loadContextTreeNode } from "../../src/phases/discovery.js";
 import { processNode } from "../../src/phases/processing.js";
 import {
     ContextTreeNode,
+    OutputtedNode,
     ProcessedNode,
     ResolvedNode,
 } from "../../src/types/nodes.js";
@@ -39,8 +40,8 @@ async function processTree() {
     });
     const outputDir: string = path.join(tempDir(), "output");
 
-    await outputNode(finalizedNode, outputDir);
-    return { outputDir: outputDir, node: finalizedNode };
+    const outputted = await outputNode(finalizedNode, outputDir);
+    return { outputDir: outputDir, node: outputted };
 }
 
 describe("The node outputter", () => {
@@ -139,5 +140,155 @@ describe("The node outputter", () => {
 
         expect(childOne).toBe("hello world");
         expect(childTwo).toBe("hello world");
+    });
+    it("should return file tree with pages at dir/index.html", async () => {
+        await makeTempFiles({
+            "tartan.context.default.json": JSON.stringify({
+                pageMode: "file",
+                pageSource: "source.md",
+                pagePattern: "*.md",
+            } as TartanContextFile),
+            "source.md": "source",
+            "child-one.md": "child one",
+            "child-two.md": "child two",
+        });
+
+        const { node } = await processTree();
+
+        expect(node).toEqual(
+            jasmine.objectContaining<OutputtedNode>({
+                type: "directory",
+                path: ".",
+                children: jasmine.arrayWithExactContents([
+                    jasmine.objectContaining<OutputtedNode>({
+                        type: "file",
+                        path: "index.html",
+                        size: 6,
+                    }),
+                    jasmine.objectContaining<OutputtedNode>({
+                        type: "directory",
+                        path: "child-one",
+                        children: jasmine.arrayWithExactContents([
+                            jasmine.objectContaining<OutputtedNode>({
+                                type: "file",
+                                path: "child-one/index.html",
+                                size: 9,
+                            }),
+                        ]),
+                    }),
+                    jasmine.objectContaining<OutputtedNode>({
+                        type: "directory",
+                        path: "child-two",
+                        children: jasmine.arrayWithExactContents([
+                            jasmine.objectContaining<OutputtedNode>({
+                                type: "file",
+                                path: "child-two/index.html",
+                                size: 9,
+                            }),
+                        ]),
+                    }),
+                ]),
+            }),
+        );
+    });
+    it("should return file tree with assets at their path", async () => {
+        const tmpDir: string = await makeTempFiles({
+            "tartan.context.default.json": JSON.stringify({
+                pageMode: "asset",
+                pageSource: "source.md",
+                pagePattern: "*.png",
+            } as TartanContextFile),
+            "source.md": "source",
+            "child-one.png": "child one", // ik totally a png :p
+            "child-two.png": "child two",
+        });
+
+        const { node } = await processTree();
+
+        expect(node).toEqual(
+            jasmine.objectContaining<OutputtedNode>({
+                type: "directory",
+                path: ".",
+                children: jasmine.arrayWithExactContents([
+                    jasmine.objectContaining<OutputtedNode>({
+                        type: "file",
+                        path: "index.html",
+                        size: 6,
+                    }),
+                    jasmine.objectContaining<OutputtedNode>({
+                        type: "file",
+                        path: "child-one.png",
+                        size: 9,
+                    }),
+                    jasmine.objectContaining<OutputtedNode>({
+                        type: "file",
+                        path: "child-two.png",
+                        size: 9,
+                    }),
+                ]),
+            }),
+        );
+    });
+    it("should return file tree containing files outputted by handoff nodes", async () => {
+        await makeTempFiles({
+            "handoff.js": `import fs from "fs/promises"; import path from "path"; export default {finalize: async (input) => {
+                if (input.thisNode.type === "handoff.file") {
+                    await fs.writeFile(path.join(input.stagingDirectory, "finalized"), "hello world");
+                }
+                else if (input.thisNode.type === "handoff") {
+                    await fs.mkdir(path.join(input.stagingDirectory, "finalized"), {recursive: true});
+                    await fs.writeFile(path.join(input.stagingDirectory, "finalized", "testfile"), "hello world");
+                }
+                return {};
+            }}`,
+            "tartan.context.default.json": JSON.stringify({
+                pageMode: "asset",
+                pageSource: "source.md",
+                pagePattern: "*.png",
+                handoffHandler: "./handoff.js",
+            } as TartanContextFile),
+            "asset.png": "a random asset but it'll be handoffed... handed off?",
+            "asset.png.context.json": JSON.stringify({
+                pageMode: "handoff",
+            } as TartanContextFile),
+            "child/tartan.context.json": JSON.stringify({
+                pageMode: "handoff",
+            } as TartanContextFile),
+        });
+
+        const { outputDir, node } = await processTree();
+
+        const childOne: string = await fs
+            .readFile(path.join(outputDir, "asset.png"))
+            .then((val) => val.toString());
+        const childTwo: string = await fs
+            .readFile(path.join(outputDir, "child/testfile"))
+            .then((val) => val.toString());
+
+        expect(childOne).toBe("hello world");
+        expect(childTwo).toBe("hello world");
+
+        expect(node).toEqual({
+            type: "directory",
+            path: ".",
+            children: jasmine.arrayWithExactContents([
+                jasmine.objectContaining<OutputtedNode>({
+                    type: "file",
+                    path: "asset.png",
+                    size: 11,
+                }),
+                {
+                    type: "directory",
+                    path: "child",
+                    children: [
+                        jasmine.objectContaining<OutputtedNode>({
+                            type: "file",
+                            path: "child/testfile",
+                            size: 11,
+                        }),
+                    ],
+                },
+            ]),
+        });
     });
 });
