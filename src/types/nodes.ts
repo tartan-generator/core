@@ -108,3 +108,16 @@ export type ResolvedNode = Omit<ProcessedNode, "outputPath" | "children"> & {
     outputPath: string;
     children: ResolvedNode[];
 };
+
+export type OutputtedNode = {
+    /**
+     * The path of this fs object, relative to the base output directory
+     */
+    path: string;
+    type: "directory" | "file";
+    children: OutputtedNode[];
+    /**
+     * The size, in bytes, of the output (if it was a file)
+     */
+    size?: number;
+};
