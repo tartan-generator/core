@@ -4,7 +4,12 @@ import { finalizeNode } from "./phases/finalizing.js";
 import { outputNode } from "./phases/output.js";
 import { processNode } from "./phases/processing.js";
 import { resolveNode } from "./phases/resolving.js";
-import { ContextTreeNode, ProcessedNode, ResolvedNode } from "./types/nodes.js";
+import {
+    ContextTreeNode,
+    OutputtedNode,
+    ProcessedNode,
+    ResolvedNode,
+} from "./types/nodes.js";
 import { FullTartanContext } from "./types/tartan-context.js";
 import { createLogger } from "winston";
 import { NullTransport } from "./types/logs.js";
@@ -21,7 +26,7 @@ export async function build(
     outputDirectory: string,
     rootContext: FullTartanContext,
     loggerTransports?: TransportStream[],
-): Promise<ResolvedNode> {
+): Promise<OutputtedNode> {
     const baseLogger = createLogger({
         transports: loggerTransports ?? [new NullTransport()],
     });
