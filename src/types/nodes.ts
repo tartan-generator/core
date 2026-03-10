@@ -109,6 +109,15 @@ export type ResolvedNode = Omit<ProcessedNode, "outputPath" | "children"> & {
     children: ResolvedNode[];
 };
 
+export type FinalizedNode = ResolvedNode & {
+    /**
+     * The size in bytes of the finalized output.
+     * If this is a container node, size won't be defined.
+     * If this is a handoff node, size will be the cumulative size of all files inside the finalized directory.
+     */
+    size?: number;
+};
+
 export type OutputtedNode = {
     /**
      * The path of this fs object, relative to the base output directory

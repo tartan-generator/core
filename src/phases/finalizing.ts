@@ -3,7 +3,7 @@
  */
 import { HandoffHandler } from "../types/handoff-handler.js";
 import { TartanInput } from "../types/inputs.js";
-import { ResolvedNode } from "../types/nodes.js";
+import { FinalizedNode, ResolvedNode } from "../types/nodes.js";
 import fs from "fs/promises";
 import path from "path";
 import {
@@ -16,6 +16,7 @@ import { buffer } from "stream/consumers";
 import { Readable } from "stream";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
+import { PassThrough } from "node:stream";
 
 const nullBuffer = Buffer.alloc(0);
 const nullStream = new Readable({
@@ -27,10 +28,11 @@ export async function finalizeNode(params: {
     node: ResolvedNode;
     rootNode?: ResolvedNode;
     sourceDirectory: string;
-}): Promise<ResolvedNode> {
+}): Promise<FinalizedNode> {
     const { node, rootNode = node, sourceDirectory } = params;
     const logger = node.logger.child({ phase: "finalizing" });
     logger.info(`starting the finalizing phase`);
+    let size: number | undefined = undefined;
     if (node.type === "handoff" || node.type === "handoff.file") {
         logger.debug(`Node is "handoff" type`);
         if (node.context.handoffHandler === undefined) {
@@ -58,6 +60,23 @@ export async function finalizeNode(params: {
                 logger,
             });
         }
+        const finalizedPath = path.join(node.stagingDirectory, "finalized");
+        size = await (node.type === "handoff"
+            ? fs
+                  .readdir(finalizedPath, {
+                      recursive: true,
+                      withFileTypes: true,
+                  })
+                  .then((entries) =>
+                      entries.map((entry) =>
+                          fs
+                              .stat(path.join(entry.parentPath, entry.name))
+                              .then((stat) => (stat.isFile() ? stat.size : 0)),
+                      ),
+                  )
+                  .then((promises) => Promise.all(promises))
+                  .then((sizes) => sizes.reduce((prev, curr) => prev + curr))
+            : fs.stat(finalizedPath).then((stat) => stat.size));
     } else {
         // find the source processor list to use
         let sourceProcessors: TartanInput<SourceProcessor>[];
@@ -158,9 +177,18 @@ export async function finalizeNode(params: {
         // write to output file
         // note: I considered using fs.copyFile if there were no source processors,
         // but that shouldn't drastically improve performance, and I feel like this is more maintainable.
+
         if (node.type !== "container") {
+            const sizeTracker: PassThrough = new PassThrough().on(
+                "data",
+                (chunk) => {
+                    size = (size ?? 0) + chunk.length;
+                },
+            );
+
             await pipeline(
                 await cumulative.getSourceStream(),
+                sizeTracker,
                 createWriteStream(
                     path.join(node.stagingDirectory, "finalized"),
                 ),
@@ -169,7 +197,7 @@ export async function finalizeNode(params: {
     }
 
     logger.info("waiting for children finalize");
-    await Promise.all(
+    const newChildren = await Promise.all(
         node.children.map((child) =>
             finalizeNode({
                 node: child,
@@ -179,5 +207,9 @@ export async function finalizeNode(params: {
         ),
     );
     logger.info("finished finalizing");
-    return node;
+    return {
+        ...node,
+        children: newChildren,
+        ...(size !== undefined ? { size: size } : {}),
+    };
 }

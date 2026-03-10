@@ -2,6 +2,7 @@ import { loadContextTreeNode } from "../../src/phases/discovery.js";
 import { processNode } from "../../src/phases/processing.js";
 import {
     ContextTreeNode,
+    FinalizedNode,
     ProcessedNode,
     ResolvedNode,
 } from "../../src/types/nodes.js";
@@ -453,12 +454,14 @@ describe("The node finalizer", () => {
 
     it("should call the handoff handler if one exists", async () => {
         const tmpDir = await makeTempFiles({
-            "source.txt": "hello world",
+            "source.txt": "",
             "tartan.context.json": JSON.stringify({
+                pageMode: "handoff",
                 handoffHandler: "./handoff.js",
             } as TartanContextFile),
             "handoff.js": `import fs from "fs/promises"; import path from "path"; export default {finalize: async (input) => {
-                await fs.writeFile(path.join(input.stagingDirectory, "finalized"), "hello world");
+                await fs.mkdir(path.join(input.stagingDirectory, "finalized"));
+                await fs.writeFile(path.join(input.stagingDirectory, "finalized", "index"), "hello world");
                 return {};
             }}`,
         });
@@ -489,9 +492,93 @@ describe("The node finalizer", () => {
         expect(
             (
                 await fs.readFile(
-                    path.join(finalizedNode.stagingDirectory, "finalized"),
+                    path.join(
+                        finalizedNode.stagingDirectory,
+                        "finalized",
+                        "index",
+                    ),
                 )
             ).toString(),
         ).toBe("hello world");
+    });
+    it("should report size for output of handoff handler", async () => {
+        const tmpDir = await makeTempFiles({
+            "tartan.context.json": JSON.stringify(<TartanContextFile>{
+                pageMode: "asset",
+                pagePattern: "*.txt",
+            }),
+            "handoff.txt": "",
+            "handoff.txt.context.json": JSON.stringify(<TartanContextFile>{
+                pageMode: "handoff",
+                handoffHandler: "./handoff-file.js",
+            }),
+            "asset.txt": "hewwo wowld",
+            "subby/tartan.context.json": JSON.stringify(<TartanContextFile>{
+                pageMode: "directory",
+                pageSource: "index",
+            }),
+            "subby/index": "hweeo woldo",
+            "sub/tartan.context.json": JSON.stringify(<TartanContextFile>{
+                pageMode: "handoff",
+                handoffHandler: "~source-directory/handoff.js",
+            }),
+            "handoff-file.js": `import fs from "fs/promises"; import path from "path"; export default {finalize: async (input) => {
+                await fs.writeFile(path.join(input.stagingDirectory, "finalized"), "hello world");
+                return {};
+            }}`,
+            "handoff.js": `import fs from "fs/promises"; import path from "path"; export default {finalize: async (input) => {
+                await fs.mkdir(path.join(input.stagingDirectory, "finalized"));
+                await fs.writeFile(path.join(input.stagingDirectory, "finalized", "a"), "hello world");
+                await fs.writeFile(path.join(input.stagingDirectory, "finalized", "b"), "hello world");
+                await fs.writeFile(path.join(input.stagingDirectory, "finalized", "c"), "hello world");
+                return {};
+            }}`,
+        });
+
+        const node: ContextTreeNode = await loadContextTreeNode({
+            directory: tmpDir,
+            rootContext: {
+                pageMode: "directory",
+                pageSource: "source.txt",
+            },
+            baseLogger: nullLogger,
+        });
+        const processedNode: ProcessedNode = await processNode({
+            node: node,
+            sourceDirectory: tmpDir,
+            rootContext: {
+                pageMode: "directory",
+                pageSource: "source.txt",
+            },
+            baseLogger: nullLogger,
+        });
+        const resolvedNode: ResolvedNode = resolveNode(processedNode);
+        const finalizedNode: FinalizedNode = await finalizeNode({
+            node: resolvedNode,
+            sourceDirectory: tempDir(),
+        });
+
+        expect(finalizedNode).toEqual(
+            jasmine.objectContaining<FinalizedNode>({
+                children: jasmine.arrayWithExactContents([
+                    jasmine.objectContaining<FinalizedNode>({
+                        path: "handoff.txt",
+                        size: 11,
+                    }),
+                    jasmine.objectContaining<FinalizedNode>({
+                        path: "asset.txt",
+                        size: 11,
+                    }),
+                    jasmine.objectContaining<FinalizedNode>({
+                        path: "sub",
+                        size: 33,
+                    }),
+                    jasmine.objectContaining<FinalizedNode>({
+                        path: "subby",
+                        size: 11,
+                    }),
+                ]),
+            }),
+        );
     });
 });
