@@ -9,5 +9,3 @@
 - Export version info (for downstream client consumption so they don't have to do garbage with `package.json` finding)
 - rename `loadContextTreeNode` to fit it's phase name
 - Add `TartanConfig` to the core library
-- Have distinct type for after output, where `outputPath` is the actual fs path (relative to the output directory) (so like a page would be `{output path}/index.html`)
-- Maybe add output file/block size after nodes are finalized?
