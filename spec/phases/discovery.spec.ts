@@ -16,6 +16,34 @@ import path from "path";
 import { nullLogger } from "../helpers/logs.js";
 
 describe("The context tree loader", () => {
+    it("should not inherit context from parent if `inherit` is false", async () => {
+        const tmpDir: string = await makeTempFiles({
+            "tartan.context.json": JSON.stringify(<TartanContextFile>{
+                extraContext: {
+                    waow: "based",
+                },
+            }),
+            "sub/tartan.context.json": JSON.stringify(<TartanContextFile>{
+                inherit: false,
+            }),
+        });
+        const rootContext: FullTartanContext = {
+            pageMode: "directory",
+            pageSource: "asfd",
+            extraContext: {
+                waow: "baked",
+            },
+        };
+
+        const node: ContextTreeNode = await loadContextTreeNode({
+            directory: tmpDir,
+            baseLogger: nullLogger,
+            rootContext,
+        });
+
+        expect(node.context.extraContext!.waow).toBe("based");
+        expect(node.children[0].context.extraContext!.waow).toBe("baked");
+    });
     it("should set node type to `container` if page source doesn't exist", async () => {
         const tmpDir: string = await makeTempFiles({});
 
