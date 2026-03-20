@@ -1,13 +1,12 @@
 import path, { ParsedPath } from "node:path";
 import fs from "fs/promises";
 import { loadModule } from "./module.js";
-import { Dirent } from "node:fs";
 import { TartanInput } from "../types/inputs.js";
 import { loadFile } from "./file.js";
 import { URL } from "node:url";
 import { pathToFileURL } from "./resolve.js";
 import { Logger } from "winston";
-import { FSCache } from "./fs.js";
+import { FSCache, FSCacheEntry } from "./fs.js";
 
 export const objectFileExtensions = [".ts", ".mts", ".js", ".mjs", ".json"];
 const objectFileExtensionSet = new Set(objectFileExtensions);
@@ -45,33 +44,27 @@ export async function loadObject<T>(
             .catch(() => false);
         pathToLoad = exists ? path.parse(resolvedFilename.pathname) : undefined;
     } else {
-        const files = await FSCache.readdir(
+        const files: FSCacheEntry[] = await FSCache.readdir(
             path.dirname(resolvedFilename.pathname),
         );
-        const matchingFiles: Dirent<string>[] = files
+
+        const matchingFiles: FSCacheEntry[] = files
             .filter(
                 (val) =>
                     val.isFile() &&
-                    objectFileExtensionSet.has(path.parse(val.name).ext) &&
-                    path.parse(val.name).name === path.basename(filepath),
+                    objectFileExtensionSet.has(val.parsedPath.ext) &&
+                    val.parsedPath.name === path.basename(filepath),
             )
             .toSorted((a, b) => {
-                const aNum = extensionIndexMap[path.parse(a.name).ext];
-                const bNum = extensionIndexMap[path.parse(b.name).ext];
+                const aNum = extensionIndexMap[a.parsedPath.ext];
+                const bNum = extensionIndexMap[b.parsedPath.ext];
 
                 return aNum - bNum;
             });
         logger.debug(`found ${matchingFiles.length} possible matches`);
 
         pathToLoad =
-            matchingFiles.length > 0
-                ? path.parse(
-                      path.join(
-                          matchingFiles[0].parentPath,
-                          matchingFiles[0].name,
-                      ),
-                  )
-                : undefined;
+            matchingFiles.length > 0 ? matchingFiles[0].parsedPath : undefined;
     }
 
     if (pathToLoad === undefined) {
