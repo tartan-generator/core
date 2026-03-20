@@ -5,3 +5,5 @@ result-*
 .tmp
 .staging
 default.nix.backup
+
+benchmarks/benchmark-*
