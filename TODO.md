@@ -9,3 +9,12 @@
 - Export version info (for downstream client consumption so they don't have to do garbage with `package.json` finding)
 - rename `loadContextTreeNode` to fit it's phase name
 - Add `TartanConfig` to the core library
+- Serializable and deserializable context trees
+    - allow specifying multiple sources for an input (like `esbuild` listing imports or a context object listing it's parents)
+    - add a timestamp/hash for sources
+    - actual node property indicating the stage and therefore format of the node (or... should I switch to classes?)
+    - Should I have caches be serializable? It would let the CLI rebuild more efficiently
+- Should I have tartan handle caching for source processors or just provide helper functions?
+    - I think it has to be handled by the source processors themselves, cause things like esbuild are able to manage multiple files and efficient rebuilds, in a way that would be needlessly complex to implement on the tartan side.
+- Should `TartanInput` have a property that's a function to reload the value?
+    - Probably not. I think that's premature optimization. All the actually hard computations happen in source processors.
