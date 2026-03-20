@@ -13,6 +13,7 @@ import {
 import { FullTartanContext } from "./types/tartan-context.js";
 import { createLogger } from "winston";
 import { NullTransport } from "./types/logs.js";
+import { FSCache } from "./inputs/fs.js";
 
 /**
  * A helper function that calls each phase in sequence and returns the root ResolvedNode
@@ -27,6 +28,7 @@ export async function build(
     rootContext: FullTartanContext,
     loggerTransports?: TransportStream[],
 ): Promise<OutputtedNode> {
+    await FSCache.populateCache(sourceDirectory);
     const baseLogger = createLogger({
         transports: loggerTransports ?? [new NullTransport()],
     });

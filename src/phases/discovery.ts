@@ -15,6 +15,7 @@ import { randomUUID } from "node:crypto";
 import { resolvePath } from "../inputs/resolve.js";
 import { Logger } from "winston";
 import { pathToFileURL } from "node:url";
+import { FSCache } from "../inputs/fs.js";
 
 export async function loadContextTreeNode(params: {
     directory: string;
@@ -219,10 +220,7 @@ async function loadChildren(
         return [];
     }
 
-    const entries = await fs.readdir(directory, {
-        withFileTypes: true,
-    });
-
+    const entries = await FSCache.readdir(directory);
     if (params.localContext.pageMode === "directory") {
         return Promise.all(loadDirectoryChildren(params, entries));
     } else if (params.localContext.pageMode === "file") {

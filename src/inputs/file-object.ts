@@ -7,6 +7,7 @@ import { loadFile } from "./file.js";
 import { URL } from "node:url";
 import { pathToFileURL } from "./resolve.js";
 import { Logger } from "winston";
+import { FSCache } from "./fs.js";
 
 export const objectFileExtensions = [".ts", ".mts", ".js", ".mjs", ".json"];
 const objectFileExtensionSet = new Set(objectFileExtensions);
@@ -44,11 +45,8 @@ export async function loadObject<T>(
             .catch(() => false);
         pathToLoad = exists ? path.parse(resolvedFilename.pathname) : undefined;
     } else {
-        const files = await fs.readdir(
+        const files = await FSCache.readdir(
             path.dirname(resolvedFilename.pathname),
-            {
-                withFileTypes: true,
-            },
         );
         const matchingFiles: Dirent<string>[] = files
             .filter(
