@@ -1,16 +1,20 @@
 import { Dirent } from "node:fs";
-import { readdir } from "node:fs/promises";
+import { readdir, access } from "node:fs/promises";
 import { join, parse, ParsedPath, resolve } from "node:path";
 
 // compatible with regular Dirent so that in-place substitutions are easier
 export type FSCacheEntry = Dirent<string> & { parsedPath: ParsedPath };
 export class FSCache {
     private static cache: Map<string, FSCacheEntry[]> = new Map();
+    private static entrySet: Set<string> = new Set();
     public static async populateCache(sourceDir: string) {
         const entries = await readdir(resolve(sourceDir), {
             withFileTypes: true,
             recursive: true,
         });
+        this.entrySet = new Set(
+            entries.map((ent) => join(ent.parentPath, ent.name)),
+        );
         this.cache = new Map();
         for (const entry of entries) {
             if (this.cache.has(entry.parentPath)) {
@@ -41,6 +45,15 @@ export class FSCache {
                         enumerable: true,
                     }) as FSCacheEntry,
             )
+        );
+    }
+
+    public static async exists(path: string): Promise<boolean> {
+        return (
+            this.entrySet.has(resolve(path)) ??
+            (await access(path)
+                .then(() => true)
+                .catch(() => false))
         );
     }
 }

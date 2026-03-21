@@ -6,28 +6,10 @@ import { loadFile } from "./file.js";
 import { URL } from "node:url";
 import { pathToFileURL } from "./resolve.js";
 import { Logger } from "winston";
-import { FSCache, FSCacheEntry } from "./fs.js";
+import { FSCache } from "./fs.js";
 
 export const objectFileExtensions = [".ts", ".mts", ".js", ".mjs", ".json"];
-/**
- * Mapping extension names into indexes so sorts are easily sortable
- */
-const extensionIndexMap: { [key: string]: number } =
-    objectFileExtensions.reduce(
-        (prev, curr, i) => ({ ...prev, [curr]: i }),
-        {} as { [key: string]: number },
-    );
 
-// look it's slightly faster. saves about 18% vs a hasmap
-function isValidExt(ext: string): boolean {
-    return (
-        ext === ".ts" ||
-        ext === ".mts" ||
-        ext === ".js" ||
-        ext === ".mjs" ||
-        ext === ".json"
-    );
-}
 function isModuleExt(ext: string): boolean {
     return ext === ".ts" || ext === ".mts" || ext === ".js" || ext === ".mjs";
 }
@@ -55,28 +37,17 @@ export async function loadObject<T>(
             .catch(() => false);
         pathToLoad = exists ? path.parse(resolvedFilename.pathname) : undefined;
     } else {
-        const files: FSCacheEntry[] = await FSCache.readdir(
-            path.dirname(resolvedFilename.pathname),
+        const validFilenames = objectFileExtensions.map(
+            (val) => resolvedFilename.pathname + val,
         );
 
-        const basename = path.basename(filepath);
-        const matchingFiles: FSCacheEntry[] = files
-            .filter(
-                (val) =>
-                    val.isFile() &&
-                    isValidExt(val.parsedPath.ext) &&
-                    val.parsedPath.name === basename,
-            )
-            .toSorted((a, b) => {
-                const aNum = extensionIndexMap[a.parsedPath.ext];
-                const bNum = extensionIndexMap[b.parsedPath.ext];
-
-                return aNum - bNum;
-            });
-        logger.debug(`found ${matchingFiles.length} possible matches`);
-
-        pathToLoad =
-            matchingFiles.length > 0 ? matchingFiles[0].parsedPath : undefined;
+        for (const validFilename of validFilenames) {
+            if (await FSCache.exists(validFilename)) {
+                pathToLoad = path.parse(validFilename);
+                logger.debug(`found ${pathToLoad} as match for ${filepath}`);
+                break;
+            }
+        }
     }
 
     if (pathToLoad === undefined) {

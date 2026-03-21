@@ -1,14 +1,15 @@
 import { nullLogger } from "../../spec/helpers/logs";
-import { loadContextTreeNode } from "../../src";
-import { FSCache } from "../../src/inputs/fs";
+import { loadContextTreeNode, processNode } from "../../dist";
+import { FSCache } from "../../dist/inputs/fs";
+import { Minimatch } from "minimatch";
 
 async function shallow() {
     const startCPU = process.cpuUsage();
     console.time("cache-populate");
     await FSCache.populateCache("benchmarks/benchmark-shallow");
     console.timeEnd("cache-populate");
-    console.time("shallow");
-    await loadContextTreeNode({
+    console.time("shallow-discover");
+    const node = await loadContextTreeNode({
         directory: "benchmarks/benchmark-shallow",
         rootContext: {
             pageMode: "file",
@@ -16,10 +17,23 @@ async function shallow() {
         },
         baseLogger: nullLogger,
     });
-    console.timeEnd("shallow");
+    console.timeEnd("shallow-discover");
+    const discoverCPU = process.cpuUsage(startCPU);
+    console.log(discoverCPU);
 
-    const endCPU = process.cpuUsage(startCPU);
-    console.log(endCPU);
+    console.time("shallow-process");
+    const processed = await processNode({
+        node,
+        sourceDirectory: "benchmarks/benchmark-shallow",
+        rootContext: {
+            pageMode: "file",
+            pagePattern: "*",
+        },
+        baseLogger: nullLogger,
+    });
+    console.timeEnd("shallow-process");
+    const processCPU = process.cpuUsage(discoverCPU);
+    console.log(processCPU);
 }
 
 await shallow();
