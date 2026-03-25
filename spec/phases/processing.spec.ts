@@ -10,6 +10,7 @@ import {
 } from "../../src/types/tartan-context.js";
 import { nullLogger } from "../helpers/logs.js";
 import { pathToFileURL } from "../../src/inputs/resolve.js";
+import { Minimatch } from "minimatch";
 
 describe("The node processor", () => {
     it("should mark derived nodes as being derived", async () => {
@@ -65,7 +66,10 @@ describe("The node processor", () => {
 
             const node: ContextTreeNode = await loadContextTreeNode({
                 directory: tmpDir,
-                rootContext: { pageMode: "asset", pagePattern: "*" },
+                rootContext: {
+                    pageMode: "asset",
+                    pagePattern: new Minimatch("*"),
+                },
                 baseLogger: nullLogger,
             });
             const processed: ProcessedNode = await processNode({

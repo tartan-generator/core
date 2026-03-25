@@ -14,6 +14,7 @@ import {
 import { ContextTreeNode } from "../../src/types/nodes.js";
 import path from "path";
 import { nullLogger } from "../helpers/logs.js";
+import { Minimatch } from "minimatch";
 
 describe("The context tree loader", () => {
     it("should not inherit context from parent if `inherit` is false", async () => {
@@ -279,7 +280,7 @@ describe("The context tree loader", () => {
             const rootContext: FullTartanContext = {
                 pageMode: "file",
                 pageSource: "index.md",
-                pagePattern: "*",
+                pagePattern: new Minimatch("*"),
             };
 
             const tmpDir = await makeTempFiles({
@@ -316,7 +317,7 @@ describe("The context tree loader", () => {
             const rootContext: FullTartanContext = {
                 pageMode: "file",
                 pageSource: "index.md",
-                pagePattern: "*",
+                pagePattern: new Minimatch("*"),
             };
 
             const tmpDir = await makeTempFiles({
@@ -393,7 +394,7 @@ describe("The context tree loader", () => {
             it("should load children", async () => {
                 const rootContext: FullTartanContext = {
                     pageMode: "file",
-                    pagePattern: "*.md",
+                    pagePattern: new Minimatch("*.md"),
                 };
                 const tmpDir = await makeTempFiles({
                     "test.md": "hewwo world",
@@ -410,7 +411,7 @@ describe("The context tree loader", () => {
             it("should give children the proper type", async () => {
                 const rootContext: FullTartanContext = {
                     pageMode: "file",
-                    pagePattern: "*.md",
+                    pagePattern: new Minimatch("*.md"),
                 };
                 const tmpDir = await makeTempFiles({
                     "test.md": "asdfjjjcnaksjdn",
@@ -426,7 +427,7 @@ describe("The context tree loader", () => {
             it("should still add sub directories as children", async () => {
                 const rootContext: FullTartanContext = {
                     pageMode: "file",
-                    pagePattern: "*.md",
+                    pagePattern: new Minimatch("*.md"),
                 };
                 const tmpDir = await makeTempFiles({
                     "first.md": "asdflkjncksjan",
@@ -445,7 +446,7 @@ describe("The context tree loader", () => {
             it("shouldn't add unmatching files as children", async () => {
                 const rootContext: FullTartanContext = {
                     pageMode: "file",
-                    pagePattern: "*.md",
+                    pagePattern: new Minimatch("*.md"),
                 };
                 const tmpDir = await makeTempFiles({
                     "file.md": "uwu",
@@ -464,7 +465,7 @@ describe("The context tree loader", () => {
                 const rootContext: FullTartanContext = {
                     pageMode: "file",
                     pageSource: "index.md",
-                    pagePattern: "*.md",
+                    pagePattern: new Minimatch("*.md"),
                 };
 
                 const tmpDir = await makeTempFiles({
@@ -485,7 +486,7 @@ describe("The context tree loader", () => {
             it("should load only matching files as assets", async () => {
                 const rootContext: FullTartanContext = {
                     pageMode: "asset",
-                    pagePattern: "*.png",
+                    pagePattern: new Minimatch("*.png"),
                 };
                 const tmpDir = await makeTempFiles({
                     "one.png": "definteily png aatatddat",
@@ -504,7 +505,7 @@ describe("The context tree loader", () => {
             it("should still load sub directory as a child", async () => {
                 const rootContext: FullTartanContext = {
                     pageMode: "asset",
-                    pagePattern: "*.png",
+                    pagePattern: new Minimatch("*.png"),
                 };
                 const tmpDir = await makeTempFiles({
                     "one.png": "adljnlkjasndf",
@@ -524,7 +525,7 @@ describe("The context tree loader", () => {
                 const rootContext: FullTartanContext = {
                     pageMode: "asset",
                     pageSource: "index.md",
-                    pagePattern: "*.md",
+                    pagePattern: new Minimatch("*.md"),
                 };
 
                 const tmpDir = await makeTempFiles({
@@ -567,7 +568,7 @@ describe("The context tree loader", () => {
             it("should set the node type to be `handoff.file` if the context that declares handoff is for a file", async () => {
                 const rootContext: FullTartanContext = {
                     pageMode: "file",
-                    pagePattern: "*.md",
+                    pagePattern: new Minimatch("*.md"),
                 };
 
                 const localContext: TartanContextFile = {

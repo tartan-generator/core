@@ -3,6 +3,7 @@ import { ReplaceTypes } from "./util.js";
 import { SourceProcessor } from "./source-processor.js";
 import { HandoffHandler } from "./handoff-handler.js";
 import { TartanInput } from "./inputs.js";
+import { Minimatch } from "minimatch";
 
 export const tartanContextSchema = {
     type: "object",
@@ -82,12 +83,13 @@ export type PartialTartanContext = ReplaceTypes<
         assetProcessors?: {
             [key: string]: TartanInput<SourceProcessor>[];
         };
+        pagePattern?: Minimatch;
     }
 >;
 export type FullTartanContext =
     | ReplaceTypes<
           PartialTartanContext,
-          { pageMode: "file"; pageSource?: string; pagePattern: string }
+          { pageMode: "file"; pageSource?: string; pagePattern: Minimatch }
       >
     | ReplaceTypes<
           PartialTartanContext,
@@ -95,7 +97,7 @@ export type FullTartanContext =
       >
     | ReplaceTypes<
           PartialTartanContext,
-          { pageMode: "asset"; pagePattern: string }
+          { pageMode: "asset"; pagePattern: Minimatch }
       >
     | ReplaceTypes<
           PartialTartanContext,

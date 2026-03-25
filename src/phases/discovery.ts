@@ -5,9 +5,9 @@ import {
 } from "../types/tartan-context.js";
 import path from "node:path";
 import { TartanInput } from "../types/inputs.js";
-import { loadObject, objectFileExtensions } from "../inputs/file-object.js";
+import { loadObject } from "../inputs/file-object.js";
 import { initializeContext } from "../inputs/context.js";
-import { minimatch } from "minimatch";
+import { MMRegExp } from "minimatch";
 import { Dirent } from "node:fs";
 import fs from "fs/promises";
 import { ContextTreeNode, NodeType } from "../types/nodes.js";
@@ -98,7 +98,7 @@ export async function loadContextTreeNode(params: {
               }
     ) as FullTartanContext;
     const context: FullTartanContext = (
-        defaultContext.value.inherit === false
+        localContext.value.inherit === false
             ? {
                   ...params.rootContext,
                   ...localContext.value,
@@ -156,10 +156,6 @@ export async function loadContextTreeNode(params: {
         }
     }
 
-    const ignoredPaths: string[] = objectFileExtensions.flatMap((extension) => [
-        `*.context${extension}`,
-        `*.context.default${extension}`,
-    ]);
     const children = await loadChildren(
         {
             rootContext: params.rootContext,
@@ -169,7 +165,6 @@ export async function loadContextTreeNode(params: {
             type: type,
             logger: logger,
             baseLogger: params.baseLogger,
-            ignored: ignoredPaths,
         },
         resolvedDirectory,
     );
@@ -193,7 +188,6 @@ type ChildLoaderParams = {
     sourceDirectory: string;
     parentContext: FullTartanContext;
     localContext: FullTartanContext;
-    ignored: string[];
     type: NodeType;
     /**
      * The local logger with phase and everything else set up.
@@ -238,17 +232,14 @@ async function loadChildren(
     }
 }
 
-function isIgnored(ignoredGlobs: string[], string: string): boolean {
-    return ignoredGlobs.some((glob) => minimatch(string, glob));
-}
+const contextFileRegex = /^.+\.context\.(?:default\.)?(?:ts|mts|js|mjs|json)$/;
 
 function loadDirectoryChildren(
     params: ChildLoaderParams,
     entries: Dirent<string>[],
 ): Promise<ContextTreeNode>[] {
     const filteredEntries = entries.filter(
-        (entry) =>
-            entry.isDirectory() && !isIgnored(params.ignored, entry.name),
+        (entry) => entry.isDirectory() && !entry.name.match(contextFileRegex),
     );
     params.logger.info(
         `loading the following directories as page children: ${filteredEntries.map((ent) => ent.name).join(",")}`,
@@ -268,12 +259,18 @@ function loadFileChildren(
     params: ChildLoaderParams,
     entries: Dirent<string>[],
 ): Promise<ContextTreeNode>[] {
+    const re = params.localContext.pagePattern!.makeRe();
+    if (!re) {
+        params.logger.error(
+            `pagePattern ${params.localContext.pagePattern?.pattern} is invalid`,
+        );
+    }
     const filteredEntries = entries.filter(
         (entry) =>
             entry.isFile() &&
             entry.name !== params.localContext.pageSource &&
-            minimatch(entry.name, params.localContext.pagePattern as string) &&
-            !isIgnored(params.ignored, entry.name),
+            entry.name.match(re as MMRegExp) &&
+            !entry.name.match(contextFileRegex),
     );
     params.logger.info(
         `loading the following files as page children: ${filteredEntries.map((ent) => ent.name).join(",")}`,
@@ -294,12 +291,18 @@ function loadAssetChildren(
     params: ChildLoaderParams,
     entries: Dirent<string>[],
 ): Promise<ContextTreeNode>[] {
+    const re = params.localContext.pagePattern!.makeRe();
+    if (!re) {
+        params.logger.error(
+            `pagePattern ${params.localContext.pagePattern?.pattern} is invalid`,
+        );
+    }
     const filteredEntries = entries.filter(
         (entry) =>
             entry.isFile() &&
             entry.name !== params.localContext.pageSource &&
-            minimatch(entry.name, params.localContext.pagePattern as string) &&
-            !isIgnored(params.ignored, entry.name),
+            entry.name.match(re as MMRegExp) &&
+            !entry.name.match(contextFileRegex),
     );
     params.logger.info(
         `loading the following files as asset children: ${filteredEntries.map((ent) => ent.name).join(",")}`,

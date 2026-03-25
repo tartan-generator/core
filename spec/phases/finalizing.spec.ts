@@ -17,6 +17,7 @@ import { resolveNode } from "../../src/phases/resolving.js";
 import { finalizeNode } from "../../src/phases/finalizing.js";
 import { nullLogger } from "../helpers/logs.js";
 import { pathToFileURL } from "../../src/inputs/resolve.js";
+import { Minimatch } from "minimatch";
 
 describe("The node finalizer", () => {
     describe("when executing source finalizers", () => {
@@ -39,7 +40,10 @@ describe("The node finalizer", () => {
 
             const node: ContextTreeNode = await loadContextTreeNode({
                 directory: tmpDir,
-                rootContext: { pageMode: "asset", pagePattern: "*" },
+                rootContext: {
+                    pageMode: "asset",
+                    pagePattern: new Minimatch("*"),
+                },
                 baseLogger: nullLogger,
             });
             const processed: ProcessedNode = await processNode({

@@ -10,6 +10,7 @@ import { SourceProcessor } from "../types/source-processor.js";
 import { loadModule } from "./module.js";
 import { HandoffHandler } from "../types/handoff-handler.js";
 import { Logger } from "winston";
+import { Minimatch } from "minimatch";
 
 /**
  * Initialize a context by resolving path prefixes and loading source processors/handoff handlers.
@@ -105,6 +106,10 @@ export async function initializeContext(
           )
         : undefined;
 
+    const pagePattern: Minimatch | undefined = contextFile.value.pagePattern
+        ? new Minimatch(contextFile.value.pagePattern)
+        : undefined;
+
     return {
         value: {
             ...contextFile.value,
@@ -114,6 +119,7 @@ export async function initializeContext(
             ...(resolvedPathPrefixes
                 ? { pathPrefixes: resolvedPathPrefixes }
                 : {}),
+            ...(pagePattern ? { pagePattern } : {}),
         } as PartialTartanContext,
         url: contextFile.url,
     };
