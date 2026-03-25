@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "node:path";
+import { FSCache } from "../../src/inputs/fs";
 
 beforeAll(async () => {
     await fs.rm(".tmp", {
@@ -12,4 +13,5 @@ beforeAll(async () => {
 beforeEach(async () => {
     const tmpDir = path.resolve(await fs.mkdtemp(".tmp/tartan-test-"));
     process.env["TMP_DIR"] = tmpDir;
+    FSCache.purgeCache();
 });
