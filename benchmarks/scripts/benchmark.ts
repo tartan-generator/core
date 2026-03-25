@@ -1,7 +1,6 @@
 import { nullLogger } from "../../spec/helpers/logs";
-import { loadContextTreeNode, processNode } from "../../dist";
-import { FSCache } from "../../dist/inputs/fs";
-import { Minimatch } from "minimatch";
+import { loadContextTreeNode, processNode } from "../../src";
+import { FSCache } from "../../src/inputs/fs.js";
 
 async function shallow() {
     const startCPU = process.cpuUsage();

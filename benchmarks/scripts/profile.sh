@@ -1,3 +1,5 @@
+npm run build
+
 rm isolate*
 npx tsx --prof benchmarks/scripts/benchmark.ts
 
