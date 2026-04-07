@@ -81,26 +81,26 @@ export async function loadObject<T>(
         return {
             value: defaultIfNoFileExists,
             url: resolvedFilename,
+            hash: "",
+            type: "default",
         };
     }
 
     if (moduleFileExtensions.has(pathToLoad.ext)) {
         logger.debug(`trying to load ${path.format(pathToLoad)} as a module`);
+        const module = await loadModule<T>(
+            pathToFileURL(path.format(pathToLoad)),
+            logger,
+        );
         return {
-            value: await loadModule<T>(
-                pathToFileURL(path.format(pathToLoad)),
-                logger,
-            ).then(
-                (val) => val.value as T, // ignore the module path, instead setting it to resolvedBasename
-            ),
+            value: module.value,
             url: resolvedFilename,
+            hash: module.hash,
+            type: module.type,
         };
     } else if (pathToLoad.ext === ".json") {
         logger.debug(`trying to load ${path.format(pathToLoad)} as JSON`);
-        return {
-            value: await loadJSON(pathToFileURL(path.format(pathToLoad))),
-            url: resolvedFilename,
-        };
+        return await loadJSON(pathToFileURL(path.format(pathToLoad)));
     } else {
         logger.error(
             `can't load ${path.format(pathToLoad)}, incompatible file type`,
@@ -109,7 +109,13 @@ export async function loadObject<T>(
     }
 }
 
-export async function loadJSON<T>(fileURL: URL): Promise<T> {
-    // TODO: object cacheing to reduce disk io
-    return loadFile(fileURL).then((val) => JSON.parse(val.value.toString()));
+export async function loadJSON<T>(fileURL: URL): Promise<TartanInput<T>> {
+    const file: TartanInput<Buffer> = await loadFile(fileURL);
+
+    return {
+        value: JSON.parse(file.value.toString()),
+        url: file.url,
+        hash: file.hash, // I'll implement merkle tree hashing later, maybe... (https://github.com/tartan-generator/core/issues/10)
+        type: "json",
+    };
 }

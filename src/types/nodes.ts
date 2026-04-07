@@ -10,7 +10,7 @@ export type NodeType =
     | "handoff.file"
     | "container";
 
-export type ContextTreeNode<T extends NodeType = NodeType> = {
+export type ContextTreeNode = {
     /**
      * The unique ID of this node.
      */
@@ -18,7 +18,7 @@ export type ContextTreeNode<T extends NodeType = NodeType> = {
     /**
      * The type of this node.
      */
-    type: T;
+    type: NodeType;
     /**
      * The path this node is located at, relative to the source directory.
      * May be a directory or a file, depending on the node's type.

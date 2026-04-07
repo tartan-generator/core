@@ -57,6 +57,8 @@ export async function loadModule<T>(
     return {
         url: moduleURL,
         value: defaultExport,
+        hash: result.outputFiles[0].hash,
+        type: "module",
     };
 }
 

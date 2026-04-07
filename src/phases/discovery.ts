@@ -27,7 +27,7 @@ export async function loadContextTreeNode(params: {
      * A logger with transport and format already set up.
      */
     baseLogger: Logger;
-}): Promise<ContextTreeNode<NodeType>> {
+}): Promise<ContextTreeNode> {
     const sourceDirectory = path.resolve(
         params.sourceDirectory ?? params.directory,
     );
@@ -71,42 +71,40 @@ export async function loadContextTreeNode(params: {
     );
 
     logger.info("initializing context objects");
-    const defaultContext: TartanInput<PartialTartanContext> =
-        await initializeContext(
-            { "~source-directory": sourceDirectory, "~this-node": nodePath },
-            defaultContextFile,
-            logger,
-        );
-    const localContext: TartanInput<PartialTartanContext> =
-        await initializeContext(
-            { "~source-directory": sourceDirectory, "~this-node": nodePath },
-            localContextFile,
-            logger,
-        );
+    const defaultContext: PartialTartanContext = await initializeContext(
+        { "~source-directory": sourceDirectory, "~this-node": nodePath },
+        defaultContextFile,
+        logger,
+    );
+    const localContext: PartialTartanContext = await initializeContext(
+        { "~source-directory": sourceDirectory, "~this-node": nodePath },
+        localContextFile,
+        logger,
+    );
 
     const inheritableContext: FullTartanContext = (
-        defaultContext.value.inherit === false
+        defaultContext.inherit === false
             ? {
                   ...params.rootContext,
-                  ...defaultContext.value,
+                  ...defaultContext,
               }
             : {
                   ...params.rootContext,
                   ...params.parentContext,
-                  ...defaultContext.value,
+                  ...defaultContext,
               }
     ) as FullTartanContext;
     const context: FullTartanContext = (
-        defaultContext.value.inherit === false
+        defaultContext.inherit === false
             ? {
                   ...params.rootContext,
-                  ...localContext.value,
+                  ...localContext,
               }
             : {
                   ...params.rootContext,
                   ...params.parentContext,
                   ...inheritableContext,
-                  ...localContext.value,
+                  ...localContext,
               }
     ) as FullTartanContext;
 
