@@ -1,5 +1,6 @@
 import { Logger } from "winston";
 import { FullTartanContext } from "./tartan-context.js";
+import { ReplaceTypes } from "./util.js";
 
 export type NodeType =
     | "page"
@@ -109,13 +110,14 @@ export type ResolvedNode = Omit<ProcessedNode, "outputPath" | "children"> & {
     children: ResolvedNode[];
 };
 
-export type FinalizedNode = ResolvedNode & {
+export type FinalizedNode = Omit<ResolvedNode, "children"> & {
     /**
      * The size in bytes of the finalized output.
      * If this is a container node, size won't be defined.
      * If this is a handoff node, size will be the cumulative size of all files inside the finalized directory.
      */
     size?: number;
+    children: FinalizedNode[];
 };
 
 export type OutputtedNode = {
