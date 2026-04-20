@@ -1,4 +1,4 @@
-import { OutputtedNode, ResolvedNode } from "../types/nodes.js";
+import { FinalizedNode, OutputtedNode, ResolvedNode } from "../types/nodes.js";
 import fs from "fs/promises";
 import { Dirent } from "node:fs";
 import path from "node:path";
@@ -11,7 +11,7 @@ import { inspect } from "node:util";
  * @argument outputDirectory The root output directory.
  */
 export async function outputNode(
-    rootNode: ResolvedNode,
+    rootNode: FinalizedNode,
     outputDir: string,
 ): Promise<OutputtedNode> {
     /*
@@ -59,10 +59,10 @@ export async function outputNode(
     /*
      * Output the nodes
      */
-    const queue: ResolvedNode[] = [rootNode];
+    const queue: FinalizedNode[] = [rootNode];
 
     while (queue.length > 0) {
-        const node: ResolvedNode = queue.pop() as ResolvedNode;
+        const node: FinalizedNode = queue.pop() as FinalizedNode;
         queue.push(...node.children);
         const logger = node.logger.child({ phase: "output" });
         logger.info(`copying finalized source to ${outputDir}`);
