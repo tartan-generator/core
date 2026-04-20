@@ -18,3 +18,4 @@
     - I think it has to be handled by the source processors themselves, cause things like esbuild are able to manage multiple files and efficient rebuilds, in a way that would be needlessly complex to implement on the tartan side.
 - Should `TartanInput` have a property that's a function to reload the value?
     - Probably not. I think that's premature optimization. All the actually hard computations happen in source processors.
+- Parameters to define cache and staging directories.
