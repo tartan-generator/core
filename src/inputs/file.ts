@@ -5,10 +5,5 @@ import { hash } from "crypto";
 
 export async function loadFile(url: URL): Promise<TartanInput<Buffer>> {
     const contents: Buffer = await fs.readFile(url.pathname);
-    return {
-        url,
-        value: contents,
-        hash: hash("sha256", contents),
-        type: "raw",
-    };
+    return new TartanInput(contents, url, hash("sha256", contents), "raw");
 }

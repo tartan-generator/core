@@ -54,12 +54,12 @@ export async function loadModule<T>(
      * Run the code and extract the default export
      */
     const defaultExport = runInThisContext(code);
-    return {
-        url: moduleURL,
-        value: defaultExport,
-        hash: result.outputFiles[0].hash,
-        type: "module",
-    };
+    return new TartanInput(
+        defaultExport,
+        moduleURL,
+        result.outputFiles[0].hash,
+        "module",
+    );
 }
 
 /*

@@ -1,6 +1,7 @@
 import { Logger } from "winston";
 import { FullTartanContext } from "./tartan-context.js";
 import { ReplaceTypes } from "./util.js";
+import { TartanInput } from "./inputs.js";
 
 export type NodeType =
     | "page"

@@ -6,6 +6,7 @@ import { processNode } from "./phases/processing.js";
 import { resolveNode } from "./phases/resolving.js";
 import {
     ContextTreeNode,
+    FinalizedNode,
     OutputtedNode,
     ProcessedNode,
     ResolvedNode,
@@ -14,6 +15,24 @@ import { FullTartanContext } from "./types/tartan-context.js";
 import { createLogger } from "winston";
 import { NullTransport } from "./types/logs.js";
 
+export type BuildResult = {
+    discovered: BuiltPhase<ContextTreeNode>;
+    processed: BuiltPhase<ProcessedNode>;
+    resolved: BuiltPhase<ResolvedNode>;
+    finalized: BuiltPhase<FinalizedNode>;
+    outputted: BuiltPhase<OutputtedNode>;
+};
+export type BuiltPhase<
+    T extends
+        | ContextTreeNode
+        | ProcessedNode
+        | ResolvedNode
+        | FinalizedNode
+        | OutputtedNode,
+> = {
+    tree: T;
+    serialized: string;
+};
 /**
  * A helper function that calls each phase in sequence and returns the root ResolvedNode
  *
@@ -26,7 +45,7 @@ export async function build(
     outputDirectory: string,
     rootContext: FullTartanContext,
     loggerTransports?: TransportStream[],
-): Promise<OutputtedNode> {
+): Promise<BuildResult> {
     const baseLogger = createLogger({
         transports: loggerTransports ?? [new NullTransport()],
     });
@@ -42,14 +61,35 @@ export async function build(
         baseLogger,
     });
     const resolved: ResolvedNode = resolveNode(processed);
-    const finalized: ResolvedNode = await finalizeNode({
+    const finalized: FinalizedNode = await finalizeNode({
         node: resolved,
         sourceDirectory: sourceDirectory,
     });
 
     const outputted = await outputNode(finalized, outputDirectory);
 
-    return outputted;
+    return {
+        discovered: {
+            tree: node,
+            serialized: JSON.stringify(node),
+        },
+        processed: {
+            tree: processed,
+            serialized: JSON.stringify(processed),
+        },
+        resolved: {
+            tree: resolved,
+            serialized: JSON.stringify(resolved),
+        },
+        finalized: {
+            tree: finalized,
+            serialized: JSON.stringify(finalized),
+        },
+        outputted: {
+            tree: outputted,
+            serialized: JSON.stringify(outputted),
+        },
+    };
 }
 
 // Export all the phases
@@ -66,6 +106,7 @@ export * from "./types/tartan-context.js";
 export * from "./types/nodes.js";
 export * from "./types/inputs.js";
 export * from "./types/logs.js";
+export * from "./types/serialized.js";
 
 // Other stuff to assist UIs
 export { loadObject } from "./inputs/file-object.js"; // to load config and stuff

@@ -78,12 +78,12 @@ export async function loadObject<T>(
 
     if (pathToLoad === undefined) {
         logger.debug("falling back to default value");
-        return {
-            value: defaultIfNoFileExists,
-            url: resolvedFilename,
-            hash: "",
-            type: "default",
-        };
+        return new TartanInput(
+            defaultIfNoFileExists,
+            resolvedFilename,
+            "",
+            "default",
+        );
     }
 
     if (moduleFileExtensions.has(pathToLoad.ext)) {
@@ -92,15 +92,15 @@ export async function loadObject<T>(
             pathToFileURL(path.format(pathToLoad)),
             logger,
         );
-        return {
-            value: module.value,
-            url: resolvedFilename,
-            hash: module.hash,
-            type: module.type,
-        };
+        module.url = resolvedFilename;
+        return module;
     } else if (pathToLoad.ext === ".json") {
         logger.debug(`trying to load ${path.format(pathToLoad)} as JSON`);
-        return await loadJSON(pathToFileURL(path.format(pathToLoad)));
+        const val: TartanInput<T> = await loadJSON(
+            pathToFileURL(path.format(pathToLoad)),
+        );
+        val.url = resolvedFilename;
+        return val;
     } else {
         logger.error(
             `can't load ${path.format(pathToLoad)}, incompatible file type`,
@@ -112,10 +112,10 @@ export async function loadObject<T>(
 export async function loadJSON<T>(fileURL: URL): Promise<TartanInput<T>> {
     const file: TartanInput<Buffer> = await loadFile(fileURL);
 
-    return {
-        value: JSON.parse(file.value.toString()),
-        url: file.url,
-        hash: file.hash, // I'll implement merkle tree hashing later, maybe... (https://github.com/tartan-generator/core/issues/10)
-        type: "json",
-    };
+    return new TartanInput(
+        JSON.parse(file.value.toString()),
+        file.url,
+        file.hash, // I'll implement merkle tree hashing later, maybe... (https://github.com/tartan-generator/core/issues/10)
+        "json",
+    );
 }
