@@ -8,7 +8,6 @@
 - Hide accidental exports (context schema) (hell maybe I should ditch the whole schema thing completely and go pure TS. I can generate schemas at build time if I really need)
 - Export version info (for downstream client consumption so they don't have to do garbage with `package.json` finding)
 - rename `loadContextTreeNode` to fit it's phase name
-- Add `TartanConfig` to the core library
 - Serializable and deserializable context trees
     - allow specifying multiple sources for an input (like `esbuild` listing imports or a context object listing it's parents)
     - add a timestamp/hash for sources

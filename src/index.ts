@@ -22,17 +22,22 @@ export type BuildResult = {
     finalized: BuiltPhase<FinalizedNode>;
     outputted: BuiltPhase<OutputtedNode>;
 };
-export type BuiltPhase<
-    T extends
-        | ContextTreeNode
-        | ProcessedNode
-        | ResolvedNode
-        | FinalizedNode
-        | OutputtedNode,
-> = {
-    tree: T;
-    serialized: string;
+
+export type TartanConfig = {
+    /**
+     * The directory to load the root node from (will be loaded as a page)
+     */
+    sourceDirectory: string;
+    /**
+     * The directory to output the generated site to.
+     */
+    outputDirectory: string;
+    /**
+     * The context object for nodes to inherit from if not their parent.
+     */
+    rootContext: FullTartanContext;
 };
+
 /**
  * A helper function that calls each phase in sequence and returns the root ResolvedNode
  *
@@ -41,11 +46,13 @@ export type BuiltPhase<
  * @argument rootContext The context for nodes to inherit from if not their parent.
  */
 export async function build(
-    sourceDirectory: string,
-    outputDirectory: string,
-    rootContext: FullTartanContext,
+    config: TartanConfig,
+    /**
+     * Tranports for winston logs. If not provided,
+     */
     loggerTransports?: TransportStream[],
 ): Promise<BuildResult> {
+    const { sourceDirectory, outputDirectory, rootContext } = config;
     const baseLogger = createLogger({
         transports: loggerTransports ?? [new NullTransport()],
     });
