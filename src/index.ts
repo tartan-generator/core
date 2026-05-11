@@ -16,11 +16,11 @@ import { createLogger } from "winston";
 import { NullTransport } from "./types/logs.js";
 
 export type BuildResult = {
-    discovered: BuiltPhase<ContextTreeNode>;
-    processed: BuiltPhase<ProcessedNode>;
-    resolved: BuiltPhase<ResolvedNode>;
-    finalized: BuiltPhase<FinalizedNode>;
-    outputted: BuiltPhase<OutputtedNode>;
+    discovered: ContextTreeNode;
+    processed: ProcessedNode;
+    resolved: ResolvedNode;
+    finalized: FinalizedNode;
+    outputted: OutputtedNode;
 };
 
 export type TartanConfig = {
@@ -56,13 +56,13 @@ export async function build(
     const baseLogger = createLogger({
         transports: loggerTransports ?? [new NullTransport()],
     });
-    const node: ContextTreeNode = await loadContextTreeNode({
+    const discovered: ContextTreeNode = await loadContextTreeNode({
         directory: sourceDirectory,
         rootContext: rootContext,
         baseLogger,
     });
     const processed: ProcessedNode = await processNode({
-        node,
+        node: discovered,
         rootContext: rootContext,
         sourceDirectory: sourceDirectory,
         baseLogger,
@@ -76,26 +76,11 @@ export async function build(
     const outputted = await outputNode(finalized, outputDirectory);
 
     return {
-        discovered: {
-            tree: node,
-            serialized: JSON.stringify(node),
-        },
-        processed: {
-            tree: processed,
-            serialized: JSON.stringify(processed),
-        },
-        resolved: {
-            tree: resolved,
-            serialized: JSON.stringify(resolved),
-        },
-        finalized: {
-            tree: finalized,
-            serialized: JSON.stringify(finalized),
-        },
-        outputted: {
-            tree: outputted,
-            serialized: JSON.stringify(outputted),
-        },
+        discovered,
+        processed,
+        resolved,
+        finalized,
+        outputted,
     };
 }
 
