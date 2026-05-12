@@ -21,7 +21,7 @@ export async function initializeContext(
     initialPrefixMap: PrefixMap,
     contextFile: TartanInput<TartanContextFile>,
     logger: Logger,
-): Promise<TartanInput<PartialTartanContext>> {
+): Promise<PartialTartanContext> {
     logger.debug("resolving path prefixes");
     const resolvedPathPrefixes: Record<string, string> | undefined = contextFile
         .value.pathPrefixes
@@ -106,15 +106,10 @@ export async function initializeContext(
         : undefined;
 
     return {
-        value: {
-            ...contextFile.value,
-            ...(sourceProcessors ? { sourceProcessors } : {}),
-            ...(handoffHandler ? { handoffHandler } : {}),
-            ...(assetProcessors ? { assetProcessors } : {}),
-            ...(resolvedPathPrefixes
-                ? { pathPrefixes: resolvedPathPrefixes }
-                : {}),
-        } as PartialTartanContext,
-        url: contextFile.url,
-    };
+        ...contextFile.value,
+        ...(sourceProcessors ? { sourceProcessors } : {}),
+        ...(handoffHandler ? { handoffHandler } : {}),
+        ...(assetProcessors ? { assetProcessors } : {}),
+        ...(resolvedPathPrefixes ? { pathPrefixes: resolvedPathPrefixes } : {}),
+    } as PartialTartanContext;
 }

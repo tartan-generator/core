@@ -1,5 +1,7 @@
 import { Logger } from "winston";
 import { FullTartanContext } from "./tartan-context.js";
+import { ReplaceTypes } from "./util.js";
+import { TartanInput } from "./inputs.js";
 
 export type NodeType =
     | "page"
@@ -9,7 +11,7 @@ export type NodeType =
     | "handoff.file"
     | "container";
 
-export type ContextTreeNode<T extends NodeType = NodeType> = {
+export type ContextTreeNode = {
     /**
      * The unique ID of this node.
      */
@@ -17,7 +19,7 @@ export type ContextTreeNode<T extends NodeType = NodeType> = {
     /**
      * The type of this node.
      */
-    type: T;
+    type: NodeType;
     /**
      * The path this node is located at, relative to the source directory.
      * May be a directory or a file, depending on the node's type.
@@ -109,13 +111,14 @@ export type ResolvedNode = Omit<ProcessedNode, "outputPath" | "children"> & {
     children: ResolvedNode[];
 };
 
-export type FinalizedNode = ResolvedNode & {
+export type FinalizedNode = Omit<ResolvedNode, "children"> & {
     /**
      * The size in bytes of the finalized output.
      * If this is a container node, size won't be defined.
      * If this is a handoff node, size will be the cumulative size of all files inside the finalized directory.
      */
     size?: number;
+    children: FinalizedNode[];
 };
 
 export type OutputtedNode = {

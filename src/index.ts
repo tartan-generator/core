@@ -6,6 +6,7 @@ import { processNode } from "./phases/processing.js";
 import { resolveNode } from "./phases/resolving.js";
 import {
     ContextTreeNode,
+    FinalizedNode,
     OutputtedNode,
     ProcessedNode,
     ResolvedNode,
@@ -13,6 +14,29 @@ import {
 import { FullTartanContext } from "./types/tartan-context.js";
 import { createLogger } from "winston";
 import { NullTransport } from "./types/logs.js";
+
+export type BuildResult = {
+    discovered: ContextTreeNode;
+    processed: ProcessedNode;
+    resolved: ResolvedNode;
+    finalized: FinalizedNode;
+    outputted: OutputtedNode;
+};
+
+export type TartanConfig = {
+    /**
+     * The directory to load the root node from (will be loaded as a page)
+     */
+    sourceDirectory: string;
+    /**
+     * The directory to output the generated site to.
+     */
+    outputDirectory: string;
+    /**
+     * The context object for nodes to inherit from if not their parent.
+     */
+    rootContext: FullTartanContext;
+};
 
 /**
  * A helper function that calls each phase in sequence and returns the root ResolvedNode
@@ -22,34 +46,42 @@ import { NullTransport } from "./types/logs.js";
  * @argument rootContext The context for nodes to inherit from if not their parent.
  */
 export async function build(
-    sourceDirectory: string,
-    outputDirectory: string,
-    rootContext: FullTartanContext,
+    config: TartanConfig,
+    /**
+     * Tranports for winston logs. If not provided,
+     */
     loggerTransports?: TransportStream[],
-): Promise<OutputtedNode> {
+): Promise<BuildResult> {
+    const { sourceDirectory, outputDirectory, rootContext } = config;
     const baseLogger = createLogger({
         transports: loggerTransports ?? [new NullTransport()],
     });
-    const node: ContextTreeNode = await loadContextTreeNode({
+    const discovered: ContextTreeNode = await loadContextTreeNode({
         directory: sourceDirectory,
         rootContext: rootContext,
         baseLogger,
     });
     const processed: ProcessedNode = await processNode({
-        node,
+        node: discovered,
         rootContext: rootContext,
         sourceDirectory: sourceDirectory,
         baseLogger,
     });
     const resolved: ResolvedNode = resolveNode(processed);
-    const finalized: ResolvedNode = await finalizeNode({
+    const finalized: FinalizedNode = await finalizeNode({
         node: resolved,
         sourceDirectory: sourceDirectory,
     });
 
     const outputted = await outputNode(finalized, outputDirectory);
 
-    return outputted;
+    return {
+        discovered,
+        processed,
+        resolved,
+        finalized,
+        outputted,
+    };
 }
 
 // Export all the phases
@@ -66,6 +98,7 @@ export * from "./types/tartan-context.js";
 export * from "./types/nodes.js";
 export * from "./types/inputs.js";
 export * from "./types/logs.js";
+export * from "./types/serialized.js";
 
 // Other stuff to assist UIs
 export { loadObject } from "./inputs/file-object.js"; // to load config and stuff

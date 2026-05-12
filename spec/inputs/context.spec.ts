@@ -23,25 +23,26 @@ describe("The context initializer", () => {
             handoffHandler: "./handoff.js",
         };
 
-        const tartanContextFile = {
+        const tartanContextFile: TartanInput<TartanContextFile> = {
             value: context,
             url: pathToFileURL(path.join(tmpDir, "tartan.context")),
+            hash: "",
+            type: "json",
         };
-        const initialized: TartanInput<PartialTartanContext> =
-            await initializeContext(
-                {
-                    "~source-directory": tmpDir,
-                },
-                tartanContextFile,
-                nullLogger
-            );
+        const initialized: PartialTartanContext = await initializeContext(
+            {
+                "~source-directory": tmpDir,
+            },
+            tartanContextFile,
+            nullLogger,
+        );
 
-        expect(initialized.value.sourceProcessors).toBeDefined();
-        expect(initialized.value.handoffHandler).toBeDefined();
+        expect(initialized.sourceProcessors).toBeDefined();
+        expect(initialized.handoffHandler).toBeDefined();
         // @ts-ignore
-        expect(initialized.value.sourceProcessors[0].value.process()).toBe(42); // the answer to life the universe and everything
+        expect(initialized.sourceProcessors[0].value.process()).toBe(42); // the answer to life the universe and everything
         // @ts-ignore
-        expect(initialized.value.handoffHandler.value.process()).toBe(84); // twice the answer idk lol
+        expect(initialized.handoffHandler.value.process()).toBe(84); // twice the answer idk lol
     });
     it("should load the asset processors", async () => {
         const tmpDir = await makeTempFiles({
@@ -59,24 +60,25 @@ describe("The context initializer", () => {
         const contextFile: TartanInput<TartanContextFile> = {
             value: context,
             url: new URL(path.join(tmpDir, "tartan.context"), "file://"),
+            hash: "",
+            type: "json",
         };
-        const initialized: TartanInput<PartialTartanContext> =
-            await initializeContext(
-                {
-                    "~source-directory": tmpDir,
-                },
-                contextFile,
-                nullLogger
-            );
+        const initialized: PartialTartanContext = await initializeContext(
+            {
+                "~source-directory": tmpDir,
+            },
+            contextFile,
+            nullLogger,
+        );
 
-        expect(initialized.value.assetProcessors).toBeDefined();
-        expect(initialized.value.assetProcessors).toEqual({
+        expect(initialized.assetProcessors).toBeDefined();
+        expect(initialized.assetProcessors).toEqual({
             png: [jasmine.objectContaining({ value: jasmine.any(Function) })],
             jpg: [jasmine.objectContaining({ value: jasmine.any(Function) })],
         });
         expect(
             (
-                initialized.value.assetProcessors as Record<
+                initialized.assetProcessors as Record<
                     string,
                     TartanInput<Function>[]
                 >
@@ -84,7 +86,7 @@ describe("The context initializer", () => {
         ).toBe(42);
         expect(
             (
-                initialized.value.assetProcessors as Record<
+                initialized.assetProcessors as Record<
                     string,
                     TartanInput<Function>[]
                 >

@@ -8,7 +8,6 @@
 - Hide accidental exports (context schema) (hell maybe I should ditch the whole schema thing completely and go pure TS. I can generate schemas at build time if I really need)
 - Export version info (for downstream client consumption so they don't have to do garbage with `package.json` finding)
 - rename `loadContextTreeNode` to fit it's phase name
-- Add `TartanConfig` to the core library
 - Serializable and deserializable context trees
     - allow specifying multiple sources for an input (like `esbuild` listing imports or a context object listing it's parents)
     - add a timestamp/hash for sources
@@ -18,3 +17,4 @@
     - I think it has to be handled by the source processors themselves, cause things like esbuild are able to manage multiple files and efficient rebuilds, in a way that would be needlessly complex to implement on the tartan side.
 - Should `TartanInput` have a property that's a function to reload the value?
     - Probably not. I think that's premature optimization. All the actually hard computations happen in source processors.
+- Parameters to define cache and staging directories.

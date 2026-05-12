@@ -78,29 +78,29 @@ export async function loadObject<T>(
 
     if (pathToLoad === undefined) {
         logger.debug("falling back to default value");
-        return {
-            value: defaultIfNoFileExists,
-            url: resolvedFilename,
-        };
+        return new TartanInput(
+            defaultIfNoFileExists,
+            resolvedFilename,
+            "",
+            "default",
+        );
     }
 
     if (moduleFileExtensions.has(pathToLoad.ext)) {
         logger.debug(`trying to load ${path.format(pathToLoad)} as a module`);
-        return {
-            value: await loadModule<T>(
-                pathToFileURL(path.format(pathToLoad)),
-                logger,
-            ).then(
-                (val) => val.value as T, // ignore the module path, instead setting it to resolvedBasename
-            ),
-            url: resolvedFilename,
-        };
+        const module = await loadModule<T>(
+            pathToFileURL(path.format(pathToLoad)),
+            logger,
+        );
+        module.url = resolvedFilename;
+        return module;
     } else if (pathToLoad.ext === ".json") {
         logger.debug(`trying to load ${path.format(pathToLoad)} as JSON`);
-        return {
-            value: await loadJSON(pathToFileURL(path.format(pathToLoad))),
-            url: resolvedFilename,
-        };
+        const val: TartanInput<T> = await loadJSON(
+            pathToFileURL(path.format(pathToLoad)),
+        );
+        val.url = resolvedFilename;
+        return val;
     } else {
         logger.error(
             `can't load ${path.format(pathToLoad)}, incompatible file type`,
@@ -109,7 +109,13 @@ export async function loadObject<T>(
     }
 }
 
-export async function loadJSON<T>(fileURL: URL): Promise<T> {
-    // TODO: object cacheing to reduce disk io
-    return loadFile(fileURL).then((val) => JSON.parse(val.value.toString()));
+export async function loadJSON<T>(fileURL: URL): Promise<TartanInput<T>> {
+    const file: TartanInput<Buffer> = await loadFile(fileURL);
+
+    return new TartanInput(
+        JSON.parse(file.value.toString()),
+        file.url,
+        file.hash, // I'll implement merkle tree hashing later, maybe... (https://github.com/tartan-generator/core/issues/10)
+        "json",
+    );
 }

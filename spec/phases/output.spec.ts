@@ -2,6 +2,7 @@ import { loadContextTreeNode } from "../../src/phases/discovery.js";
 import { processNode } from "../../src/phases/processing.js";
 import {
     ContextTreeNode,
+    FinalizedNode,
     OutputtedNode,
     ProcessedNode,
     ResolvedNode,
@@ -34,7 +35,7 @@ async function processTree() {
         baseLogger: nullLogger,
     });
     const resolvedNode: ResolvedNode = resolveNode(processedNode);
-    const finalizedNode: ResolvedNode = await finalizeNode({
+    const finalizedNode: FinalizedNode = await finalizeNode({
         node: resolvedNode,
         sourceDirectory: tempDir(),
     });
