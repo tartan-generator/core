@@ -16,7 +16,6 @@ export class TartanInput<T> {
     }
 
     public toJSON() {
-        console.log("JSON WAOW");
         return {
             url: this.url.href,
             hash: this.hash,

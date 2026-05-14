@@ -28,7 +28,21 @@ in {
         name = "node-v${version}";
         value = buildOnVersion version;
       })
-      nodeVersions);
+      nodeVersions)
+    // {
+      consoleLogCheck = pkgs.stdenv.mkDerivation {
+        pname = "tartan-core-console-log-check";
+        version = version;
+        src = builtins.fetchGit {
+          url = ./.;
+          shallow = true; # required to work in a github actions runner
+        };
+        buildInputs = [pkgs.ripgrep];
+        doCheck = true;
+        checkPhase = "! rg --line-number --type-add 'web:*.{js,ts}' --type web '^[^/]*console\\.log' ."; # basic search for uncommented console.log
+        installPhase = "echo \":3\" > $out";
+      };
+    };
 
   shell = pkgs.mkShell {
     packages = with pkgs; [
