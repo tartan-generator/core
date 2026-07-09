@@ -9,7 +9,7 @@
     },
 }: let
   version = (builtins.fromJSON (builtins.readFile ./package.json)).version;
-  dependencyHash = "sha256-dJoeiRMgJ9HunHHpAjboYD4I/0TqK9F5MSdKqBFpT2A=";
+  dependencyHash = "sha256-tc0Cm2flCuX4H+Pyr8LGJLkbkdvCEhSj16IPQqckF4k=";
   buildOnVersion = nodeVersion:
     pkgs.buildNpmPackage {
       pname = "tartan-core";
