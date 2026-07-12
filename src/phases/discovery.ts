@@ -13,7 +13,7 @@ import fs from "fs/promises";
 import { ContextTreeNode, NodeType } from "../types/nodes.js";
 import { randomUUID } from "node:crypto";
 import { resolvePath } from "../inputs/resolve.js";
-import { Logger } from "winston";
+import { Logger } from "pino";
 import { pathToFileURL } from "node:url";
 
 export async function loadContextTreeNode(params: {

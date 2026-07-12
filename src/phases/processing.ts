@@ -19,7 +19,7 @@ import { Readable } from "stream";
 import { loadContextTreeNode } from "./discovery.js";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
-import { Logger } from "winston";
+import { Logger } from "pino";
 
 const nullBuffer = Buffer.alloc(0);
 const nullStream = new Readable({

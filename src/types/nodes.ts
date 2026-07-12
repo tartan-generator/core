@@ -1,4 +1,4 @@
-import { Logger } from "winston";
+import { Logger } from "pino";
 import { FullTartanContext } from "./tartan-context.js";
 import { ReplaceTypes } from "./util.js";
 import { TartanInput } from "./inputs.js";

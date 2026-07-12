@@ -3,7 +3,7 @@ import esbuild from "esbuild";
 import { runInThisContext, Script } from "node:vm";
 import { URL } from "node:url";
 import { createRequire } from "node:module";
-import { Logger } from "winston";
+import { Logger } from "pino";
 
 // put require in the global scope, if it's not already there.
 // this is just so that I can use imports in the loaded modules, and share the global scope

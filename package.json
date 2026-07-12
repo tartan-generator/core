@@ -1,6 +1,6 @@
 {
     "name": "@tartan/core",
-    "version": "0.10.2",
+    "version": "0.10.3",
     "description": "Core utilities for the Tartan static site generator.",
     "homepage": "https://github.com/tartan-generator/core.git#readme",
     "bugs": {
@@ -31,12 +31,12 @@
         "esbuild": "^0.27.3",
         "json-schema-to-ts": "^3.1.1",
         "minimatch": "^10.0.1",
-        "winston": "^3.19.0",
+        "pino": "^10.3.1",
         "winston-transport": "^4.9.0"
     },
     "devDependencies": {
-        "@types/node": "^25.2.2",
         "@types/jasmine": "^5.1.7",
+        "@types/node": "^25.2.2",
         "jasmine": "^6.0.0",
         "tsx": "^4.21.0",
         "typescript": "^5.7.2"

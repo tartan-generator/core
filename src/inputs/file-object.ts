@@ -6,7 +6,7 @@ import { TartanInput } from "../types/inputs.js";
 import { loadFile } from "./file.js";
 import { URL } from "node:url";
 import { pathToFileURL } from "./resolve.js";
-import { Logger } from "winston";
+import { Logger } from "pino";
 
 export const objectFileExtensions = [".ts", ".mts", ".js", ".mjs", ".json"];
 const objectFileExtensionSet = new Set(objectFileExtensions);

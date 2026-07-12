@@ -9,7 +9,7 @@ import { PrefixMap, resolvePath } from "./resolve.js";
 import { SourceProcessor } from "../types/source-processor.js";
 import { loadModule } from "./module.js";
 import { HandoffHandler } from "../types/handoff-handler.js";
-import { Logger } from "winston";
+import { Logger } from "pino";
 
 /**
  * Initialize a context by resolving path prefixes and loading source processors/handoff handlers.

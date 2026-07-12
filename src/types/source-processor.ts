@@ -3,7 +3,7 @@ import { ProcessedNode } from "../types/nodes.js";
 import { FullTartanContext } from "./tartan-context.js";
 import { ResolvedNode } from "./nodes.js";
 import { URLSearchParams } from "node:url";
-import { Logger } from "winston";
+import { Logger } from "pino";
 
 export type SourceProcessor = {
     process?: (input: SourceProcessorInput) => Promise<SourceProcessorOutput>;

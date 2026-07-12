@@ -1,6 +1,6 @@
-import { createLogger } from "winston";
-import { NullTransport } from "../../src/index";
+import pino from "pino";
 
-export const nullLogger = createLogger({
-    transports: [new NullTransport()],
+export const nullLogger = pino({
+    name: "null",
+    level: "silent",
 });

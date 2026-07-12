@@ -1,7 +1,7 @@
 import { URLSearchParams } from "node:url";
 import { ResolvedNode } from "./nodes.js";
 import { FullTartanContext } from "./tartan-context.js";
-import { Logger } from "winston";
+import { Logger } from "pino";
 
 export type HandoffHandler = {
     process?: (input: HandoffHandlerInput) => Promise<HandoffHandlerOutput>;

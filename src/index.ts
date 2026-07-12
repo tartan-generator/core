@@ -12,7 +12,7 @@ import {
     ResolvedNode,
 } from "./types/nodes.js";
 import { FullTartanContext } from "./types/tartan-context.js";
-import { createLogger, Logger } from "winston";
+import { Logger } from "pino";
 import { NullTransport } from "./types/logs.js";
 
 export type BuildResult = {
@@ -50,14 +50,9 @@ export async function build(
     /**
      * Logger for the build to use (logs will be suppressed if not provided)
      */
-    baseLogger?: Logger,
+    baseLogger: Logger,
 ): Promise<BuildResult> {
     const { sourceDirectory, outputDirectory, rootContext } = config;
-    baseLogger =
-        baseLogger ??
-        createLogger({
-            transports: [new NullTransport()], // suppress logs if not given a logger to use
-        });
     const discovered: ContextTreeNode = await loadContextTreeNode({
         directory: sourceDirectory,
         rootContext: rootContext,
