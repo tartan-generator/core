@@ -51,8 +51,9 @@ export async function loadContextTreeNode(params: {
         nodePath: nodePath,
     });
     const logger = nodeLogger.child({ phase: "discovery" });
+    logger.debug(`starting discovery phase`);
 
-    logger.info("loading context objects");
+    logger.debug("loading context objects");
     const defaultContextFilename: string = path.join(
         resolvedDirectory,
         `${params.filename ?? "tartan"}.context.default`,
@@ -70,7 +71,7 @@ export async function loadContextTreeNode(params: {
         logger,
     );
 
-    logger.info("initializing context objects");
+    logger.debug("initializing context objects");
     const defaultContext: PartialTartanContext = await initializeContext(
         { "~source-directory": sourceDirectory, "~this-node": nodePath },
         defaultContextFile,
@@ -82,6 +83,7 @@ export async function loadContextTreeNode(params: {
         logger,
     );
 
+    logger.debug("merging context objects");
     const inheritableContext: FullTartanContext = (
         defaultContext.inherit === false
             ? {
@@ -108,7 +110,13 @@ export async function loadContextTreeNode(params: {
               }
     ) as FullTartanContext;
 
-    let type: NodeType = params.type ?? "page"; // default to page type
+    let type: NodeType; // default to page type
+    if (!params.type) {
+        type = "page";
+        logger.debug("no type provided for node, using default (page)");
+    } else {
+        type = params.type;
+    }
 
     // resolve a source path
     let sourcePath: URL | undefined;
@@ -130,14 +138,21 @@ export async function loadContextTreeNode(params: {
 
     // override the type if necessary
     if (context.pageMode === "handoff") {
+        logger.debug(
+            `setting node type to "handoff" based on the "pageMode" context property`,
+        );
         type =
             params.type === "page.file" || params.type === "asset"
                 ? "handoff.file"
                 : "handoff";
     } else if (context.pageMode === "container") {
+        logger.debug(
+            `setting node type to "container" based on the "pageMode" context property`,
+        );
         type = "container";
         sourcePath = undefined;
     } else if (type === "page") {
+        logger.debug(`checking if "sourcePath" exists`);
         // the path exists and is a file
         const valid: boolean =
             sourcePath !== undefined
@@ -148,6 +163,9 @@ export async function loadContextTreeNode(params: {
                 : false;
 
         if (!valid) {
+            logger.debug(
+                `setting node type to "container" because source path doesn't exist`,
+            );
             type = "container";
             sourcePath = undefined;
         }
@@ -157,6 +175,7 @@ export async function loadContextTreeNode(params: {
         `*.context${extension}`,
         `*.context.default${extension}`,
     ]);
+    logger.debug("loading children");
     const children = await loadChildren(
         {
             rootContext: params.rootContext,
@@ -206,14 +225,14 @@ async function loadChildren(
     directory: string,
 ): Promise<ContextTreeNode[]> {
     const logger = params.logger;
-    logger.info("trying to load children");
+    logger.debug("trying to load children");
     if (
         params.type === "page.file" ||
         params.type === "asset" ||
         params.type === "handoff" ||
         params.type === "handoff.file"
     ) {
-        logger.info(`type ${params.type} doesn't allow children`);
+        logger.debug(`type ${params.type} doesn't allow children`);
         return [];
     }
 
@@ -222,17 +241,25 @@ async function loadChildren(
     });
 
     if (params.localContext.pageMode === "directory") {
-        return Promise.all(loadDirectoryChildren(params, entries));
+        const children = await Promise.all(
+            loadDirectoryChildren(params, entries),
+        );
+        logger.debug(`found ${children.length} children`);
+        return children;
     } else if (params.localContext.pageMode === "file") {
-        return Promise.all([
+        const children = await Promise.all([
             ...loadDirectoryChildren(params, entries),
             ...loadFileChildren(params, entries),
         ]);
+        logger.debug(`found ${children.length} children`);
+        return children;
     } else if (params.localContext.pageMode === "asset") {
-        return Promise.all([
+        const children = await Promise.all([
             ...loadDirectoryChildren(params, entries),
             ...loadAssetChildren(params, entries),
         ]);
+        logger.debug(`found ${children.length} children`);
+        return children;
     } else {
         return [];
     }
@@ -250,7 +277,7 @@ function loadDirectoryChildren(
         (entry) =>
             entry.isDirectory() && !isIgnored(params.ignored, entry.name),
     );
-    params.logger.info(
+    params.logger.trace(
         `loading the following directories as page children: ${filteredEntries.map((ent) => ent.name).join(",")}`,
     );
     return filteredEntries.map((dir) =>
@@ -275,7 +302,7 @@ function loadFileChildren(
             minimatch(entry.name, params.localContext.pagePattern as string) &&
             !isIgnored(params.ignored, entry.name),
     );
-    params.logger.info(
+    params.logger.trace(
         `loading the following files as page children: ${filteredEntries.map((ent) => ent.name).join(",")}`,
     );
     return filteredEntries.map((file) =>
@@ -301,7 +328,7 @@ function loadAssetChildren(
             minimatch(entry.name, params.localContext.pagePattern as string) &&
             !isIgnored(params.ignored, entry.name),
     );
-    params.logger.info(
+    params.logger.trace(
         `loading the following files as asset children: ${filteredEntries.map((ent) => ent.name).join(",")}`,
     );
     return filteredEntries.map((file) =>

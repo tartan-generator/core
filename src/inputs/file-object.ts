@@ -34,7 +34,7 @@ export async function loadObject<T>(
      */
     hasExtension: boolean = false,
 ): Promise<TartanInput<T>> {
-    logger.debug(`trying to load object at ${filepath}`);
+    logger.trace(`trying to load object at ${filepath}`);
     let pathToLoad: ParsedPath | undefined = undefined;
     const resolvedFilename: URL = pathToFileURL(path.resolve(filepath));
     if (hasExtension) {
@@ -63,7 +63,7 @@ export async function loadObject<T>(
 
                 return aNum - bNum;
             });
-        logger.debug(`found ${matchingFiles.length} possible matches`);
+        logger.trace(`found ${matchingFiles.length} possible matches`);
 
         pathToLoad =
             matchingFiles.length > 0
@@ -77,7 +77,7 @@ export async function loadObject<T>(
     }
 
     if (pathToLoad === undefined) {
-        logger.debug("falling back to default value");
+        logger.trace("falling back to default value");
         return new TartanInput(
             defaultIfNoFileExists,
             resolvedFilename,
@@ -87,7 +87,7 @@ export async function loadObject<T>(
     }
 
     if (moduleFileExtensions.has(pathToLoad.ext)) {
-        logger.debug(`trying to load ${path.format(pathToLoad)} as a module`);
+        logger.trace(`trying to load ${path.format(pathToLoad)} as a module`);
         const module = await loadModule<T>(
             pathToFileURL(path.format(pathToLoad)),
             logger,
@@ -95,7 +95,7 @@ export async function loadObject<T>(
         module.url = resolvedFilename;
         return module;
     } else if (pathToLoad.ext === ".json") {
-        logger.debug(`trying to load ${path.format(pathToLoad)} as JSON`);
+        logger.trace(`trying to load ${path.format(pathToLoad)} as JSON`);
         const val: TartanInput<T> = await loadJSON(
             pathToFileURL(path.format(pathToLoad)),
         );

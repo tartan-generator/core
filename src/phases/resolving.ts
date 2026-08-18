@@ -14,7 +14,7 @@ export function resolveNode(
     isRoot: boolean = true,
 ): ResolvedNode {
     const logger = node.logger.child({ phase: "resolving" });
-    logger.info("resolving output path");
+    logger.debug("resolving output path");
     const outputPath: string =
         isRoot === true
             ? "."
@@ -23,8 +23,8 @@ export function resolveNode(
               : node.type === "page.file"
                 ? path.parse(node.path).name
                 : path.basename(node.path);
-    logger.debug(`unresolved output path is ${outputPath}`);
-    logger.debug(`parent output path is ${parentDir}`);
+    logger.trace(`unresolved output path is ${outputPath}`);
+    logger.trace(`parent output path is ${parentDir}`);
 
     const resolvedPath: string = path.normalize(
         path.join(parentDir, outputPath),

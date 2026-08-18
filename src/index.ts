@@ -1,4 +1,3 @@
-import TransportStream from "winston-transport";
 import { loadContextTreeNode } from "./phases/discovery.js";
 import { finalizeNode } from "./phases/finalizing.js";
 import { outputNode } from "./phases/output.js";
@@ -13,7 +12,6 @@ import {
 } from "./types/nodes.js";
 import { FullTartanContext } from "./types/tartan-context.js";
 import { Logger } from "pino";
-import { NullTransport } from "./types/logs.js";
 
 export type BuildResult = {
     discovered: ContextTreeNode;
@@ -94,7 +92,6 @@ export * from "./types/source-processor.js";
 export * from "./types/tartan-context.js";
 export * from "./types/nodes.js";
 export * from "./types/inputs.js";
-export * from "./types/logs.js";
 export * from "./types/serialized.js";
 
 // Other stuff to assist UIs

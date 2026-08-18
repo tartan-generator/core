@@ -65,7 +65,7 @@ export async function outputNode(
         const node: FinalizedNode = queue.pop() as FinalizedNode;
         queue.push(...node.children);
         const logger = node.logger.child({ phase: "output" });
-        logger.info(`copying finalized source to ${outputDir}`);
+        logger.debug(`copying finalized source to ${outputDir}`);
 
         const sourcePath: string = path.join(
             node.stagingDirectory,

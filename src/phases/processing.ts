@@ -54,11 +54,11 @@ export async function processNode(params: {
 }): Promise<ProcessedNode> {
     const logger = params.node.logger.child({ phase: "processing" });
     const { node, rootContext, sourceDirectory, isRoot = true } = params;
-    logger.info("starting node processing");
+    logger.debug("starting node processing");
     /*
      * Process child nodes.
      */
-    logger.info("processing children");
+    logger.debug("processing children");
     const processedChildren: ProcessedNode[] = await Promise.all(
         node.children.map((child) =>
             processNode({
@@ -80,29 +80,42 @@ export async function processNode(params: {
          */
         logger.debug(`Node is "handoff" type`);
         if (node.context.handoffHandler === undefined) {
-            throw `No handoff handler object for handoff node ${node.id} at ${node.path}`;
+            logger.error(
+                `No handoff handler object for handoff node ${node.id} at ${node.path}`,
+            );
+            throw new Error(
+                `No handoff handler object for handoff node ${node.id} at ${node.path}`,
+            );
         }
         const handoffHandler: HandoffHandler =
             node.context.handoffHandler.value;
 
         // Execute handoff handler
-        logger.debug(
+        logger.trace(
             `handoff handler found at ${node.context.handoffHandler.url.pathname}`,
         );
-        logger.info("executing handoff handler's `process` function");
         let output: HandoffHandlerOutput = {};
         if (handoffHandler.process) {
-            output = await handoffHandler.process({
-                extraContext: node.context.extraContext,
-                extraParameters: node.context.handoffHandler.url.searchParams,
-                nodePath: node.path,
-                stagingDirectory: node.stagingDirectory,
-                isRoot: isRoot,
-                isFile: node.type === "handoff.file",
-                logger: logger,
-            });
+            logger.debug("executing handler's process function");
+            try {
+                output = await handoffHandler.process({
+                    extraContext: node.context.extraContext,
+                    extraParameters:
+                        node.context.handoffHandler.url.searchParams,
+                    nodePath: node.path,
+                    stagingDirectory: node.stagingDirectory,
+                    isRoot: isRoot,
+                    isFile: node.type === "handoff.file",
+                    logger: logger,
+                });
+            } catch (e) {
+                logger.error(`process function failed: ${e}`);
+                throw e;
+            }
+        } else {
+            logger.debug("handler has no process function");
         }
-        logger.debug(
+        logger.trace(
             `Handoff handler outputted ${JSON.stringify(output, null, 4)}`,
         );
 
@@ -132,31 +145,36 @@ export async function processNode(params: {
             node.type === "page.file" ||
             node.type === "container"
         ) {
-            logger.debug(
+            logger.trace(
                 `node is a ${node.type}, using the regular source processor list`,
             );
             sourceProcessors = node.context.sourceProcessors ?? [];
         } else if (node.type === "asset") {
-            logger.debug(
-                "node is an asset, trying to match with an asset processor list",
-            );
+            logger.trace("node is an asset, using asset processor list");
             const match = Object.entries(
                 node.context.assetProcessors ?? {},
             ).find(([glob]) => minimatch(path.basename(node.path), glob));
             if (match) {
-                logger.debug(`matched glob ${match[0]}`);
+                logger.trace(`matched glob ${match[0]}`);
                 sourceProcessors = match[1];
             } else {
-                logger.debug("no match found");
+                logger.trace("no match found");
                 sourceProcessors = [];
             }
         } else {
-            throw `invalid node type "${node.type}" for node ${node.id} at ${node.path}`;
+            logger.error(
+                `invalid node type "${node.type}" for node ${node.id} at ${node.path}`,
+            );
+            throw new Error(
+                `invalid node type "${node.type}" for node ${node.id} at ${node.path}`,
+            );
         }
-        logger.info(`found ${sourceProcessors.length} processors to execute`);
+        logger.debug(
+            `found ${sourceProcessors.length} source processors to use`,
+        );
 
         if (node.sourcePath)
-            logger.debug(
+            logger.trace(
                 `loading initial source from ${node.sourcePath.pathname}`,
             );
         /*
@@ -189,91 +207,99 @@ export async function processNode(params: {
          */
         let i = 0;
         for (const processor of sourceProcessors) {
-            logger.info(
+            logger.trace(
                 `running process function of processor ${i} (${processor.url.pathname})`,
             );
-            i++;
             if (processor.value.process) {
-                const output: SourceProcessorOutput =
-                    await processor.value.process({
-                        getSourceBuffer: cumulative.getSourceBuffer,
-                        getSourceStream: cumulative.getSourceStream,
-                        extraContext: node.context.extraContext,
-                        pathParameters: processor.url.searchParams,
-                        sourceMetadata: cumulative.sourceMetadata,
-                        sourcePath: node.sourcePath,
-                        outputPath: cumulative.outputPath,
-                        isRoot,
-                        children: processedChildren,
-                        dependencies: cumulative.dependencies,
-                        logger,
-                    });
+                try {
+                    const output: SourceProcessorOutput =
+                        await processor.value.process({
+                            getSourceBuffer: cumulative.getSourceBuffer,
+                            getSourceStream: cumulative.getSourceStream,
+                            extraContext: node.context.extraContext,
+                            pathParameters: processor.url.searchParams,
+                            sourceMetadata: cumulative.sourceMetadata,
+                            sourcePath: node.sourcePath,
+                            outputPath: cumulative.outputPath,
+                            isRoot,
+                            children: processedChildren,
+                            dependencies: cumulative.dependencies,
+                            logger,
+                        });
 
-                // update transient params again
-                if (node.type !== "container") {
-                    const contents = output.processedContents;
-                    cumulative.getSourceBuffer =
-                        contents instanceof Buffer
-                            ? async () => contents
-                            : async () => buffer(contents as Readable);
-                    cumulative.getSourceStream =
-                        contents instanceof Readable
-                            ? async () => contents
-                            : async () => Readable.from(contents as Buffer);
-                }
-                cumulative.sourceMetadata = {
-                    ...cumulative.sourceMetadata,
-                    ...output.sourceMetadata,
-                };
-                cumulative.outputPath =
-                    output.outputPath ?? cumulative.outputPath;
-                cumulative.dependencies = Array.from(
-                    new Set(
-                        cumulative.dependencies.concat(
-                            (output.dependencies ?? []).map(
-                                // resolve relative to the source file
-                                (dependency) => {
-                                    const pat = resolvePath(
-                                        dependency,
-                                        node.sourcePath
-                                            ? path.dirname(
-                                                  node.sourcePath.pathname,
-                                              )
-                                            : node.type === "page"
-                                              ? path.resolve(
-                                                    sourceDirectory,
-                                                    node.path,
-                                                )
-                                              : path.dirname(
-                                                    path.resolve(
+                    // update transient params again
+                    if (node.type !== "container") {
+                        const contents = output.processedContents;
+                        cumulative.getSourceBuffer =
+                            contents instanceof Buffer
+                                ? async () => contents
+                                : async () => buffer(contents as Readable);
+                        cumulative.getSourceStream =
+                            contents instanceof Readable
+                                ? async () => contents
+                                : async () => Readable.from(contents as Buffer);
+                    }
+                    cumulative.sourceMetadata = {
+                        ...cumulative.sourceMetadata,
+                        ...output.sourceMetadata,
+                    };
+                    cumulative.outputPath =
+                        output.outputPath ?? cumulative.outputPath;
+                    cumulative.dependencies = Array.from(
+                        new Set(
+                            cumulative.dependencies.concat(
+                                (output.dependencies ?? []).map(
+                                    // resolve relative to the source file
+                                    (dependency) => {
+                                        const pat = resolvePath(
+                                            dependency,
+                                            node.sourcePath
+                                                ? path.dirname(
+                                                      node.sourcePath.pathname,
+                                                  )
+                                                : node.type === "page"
+                                                  ? path.resolve(
                                                         sourceDirectory,
                                                         node.path,
+                                                    )
+                                                  : path.dirname(
+                                                        path.resolve(
+                                                            sourceDirectory,
+                                                            node.path,
+                                                        ),
                                                     ),
-                                                ),
-                                        {
-                                            "~source-directory":
-                                                sourceDirectory,
-                                            "~this-node":
-                                                node.type === "page"
-                                                    ? node.path
-                                                    : path.dirname(node.path),
-                                            "~source-processor": path.dirname(
-                                                processor.url.pathname,
-                                            ),
-                                        },
-                                    ).pathname;
-                                    return pat;
-                                },
+                                            {
+                                                "~source-directory":
+                                                    sourceDirectory,
+                                                "~this-node":
+                                                    node.type === "page"
+                                                        ? node.path
+                                                        : path.dirname(
+                                                              node.path,
+                                                          ),
+                                                "~source-processor":
+                                                    path.dirname(
+                                                        processor.url.pathname,
+                                                    ),
+                                            },
+                                        ).pathname;
+                                        return pat;
+                                    },
+                                ),
                             ),
                         ),
-                    ),
-                ); // ik this isn't efficient but it shouldn't matter}
+                    ); // ik this isn't efficient but it shouldn't matter
+                } catch (e) {
+                    logger.error(`processor ${i} failed: ${e}`);
+                    throw e;
+                }
             }
+            i++;
         }
 
-        logger.info("finished executing all source processors");
+        logger.debug("finished executing all source processors");
 
-        logger.info("writing processed contents to staging directory");
+        logger.debug("writing processed contents to staging directory");
         // write to output file
         // note: I considered using fs.copyFile if there were no source processors,
         // but that shouldn't drastically improve performance, and I feel like this is more maintainable.
@@ -286,7 +312,7 @@ export async function processNode(params: {
             );
         }
 
-        logger.info(
+        logger.debug(
             `loading ${cumulative.dependencies.length} derived children`,
         );
         const derivedChildren: ProcessedNode[] = await Promise.all(
@@ -316,7 +342,7 @@ export async function processNode(params: {
             ),
         );
 
-        logger.info("finished processing");
+        logger.debug("finished processing");
         return {
             id: node.id,
             path: node.path,

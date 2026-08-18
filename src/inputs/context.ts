@@ -22,7 +22,12 @@ export async function initializeContext(
     contextFile: TartanInput<TartanContextFile>,
     logger: Logger,
 ): Promise<PartialTartanContext> {
-    logger.debug("resolving path prefixes");
+    if (contextFile.type === "default") {
+        // the default object for a context file is empty, so there's nothing to initialize
+        return {};
+    }
+    logger.info(`initializing context file at ${contextFile.url}`);
+    logger.trace("resolving path prefixes");
     const resolvedPathPrefixes: Record<string, string> | undefined = contextFile
         .value.pathPrefixes
         ? Object.fromEntries(
@@ -39,7 +44,7 @@ export async function initializeContext(
           )
         : undefined;
 
-    logger.debug("resolving and importing source processors");
+    logger.trace("resolving and importing source processors");
     const sourceProcessors: FullTartanContext["sourceProcessors"] = contextFile
         .value.sourceProcessors
         ? await Promise.all(
@@ -59,7 +64,7 @@ export async function initializeContext(
           )
         : undefined;
 
-    logger.debug("resolving and importing handoff handler");
+    logger.trace("resolving and importing handoff handler");
     const handoffHandler: FullTartanContext["handoffHandler"] = contextFile
         .value.handoffHandler
         ? await loadModule<HandoffHandler>(
@@ -75,7 +80,7 @@ export async function initializeContext(
           )
         : undefined;
 
-    logger.debug("resolving and importing asset source processors");
+    logger.trace("resolving and importing asset source processors");
     const assetProcessors: FullTartanContext["assetProcessors"] = contextFile
         .value.assetProcessors
         ? Object.fromEntries(

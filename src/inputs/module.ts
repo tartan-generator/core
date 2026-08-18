@@ -45,7 +45,9 @@ export async function loadModule<T>(
         );
     }
     if (result.outputFiles.length !== 1) {
-        throw `wrong number of output files. should be 1, was ${result.outputFiles.length}`;
+        logger.error(
+            `wrong number of output files. should be 1, was ${result.outputFiles.length}`,
+        );
     }
 
     const code = `${result.outputFiles[0].text}\nexports.default`;
